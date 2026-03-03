@@ -1,0 +1,1105 @@
+#include "ns3/core-module.h"
+#include "ns3/network-module.h"
+#include "ns3/internet-module.h"
+#include "ns3/mobility-module.h"
+#include "ns3/csma-module.h"
+#include "ns3/tap-bridge-module.h"
+#include "ns3/nr-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/netanim-module.h"
+#include "ns3/applications-module.h"
+#include "json/json.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <map>
+#include <algorithm>
+#include <fstream>
+#include <iomanip>
+#include "ns3/nr-ue-rrc.h" 
+#include "ns3/traffic-control-helper.h"
+#include "ns3/traffic-control-layer.h"
+#include "ns3/ipv4-interface.h"
+#include "ns3/arp-cache.h"
+#include "ns3/eps-bearer.h"
+#include "ns3/nr-point-to-point-epc-helper.h"
+#include "ns3/nr-eps-bearer.h"
+#include "ns3/nr-epc-tft.h"
+#include "debug-functions.h"
+#include "metrics-calc.h"
+#include "ns3/nr-ue-net-device.h"
+#include "ns3/nr-ue-mac.h"
+#include "ns3/nr-gnb-net-device.h"
+#include "ns3/nr-gnb-mac.h"
+#include "ns3/nr-bearer-stats-calculator.h"
+#include "ns3/nr-common.h"
+
+using namespace ns3;
+using namespace ns3::nr;
+
+NS_LOG_COMPONENT_DEFINE("Ditto5GControl");
+
+// ===========================================================================
+// GLOBAL DECLARATIONS
+// =========================================================================== 
+
+bool g_debugMode = false;   // this variable to enable or disbale the debugging functions
+
+
+
+// void ComputeBler() {
+//     double interval = 1.0;
+//     std::cout << "\n\033[1;35m--- 5G RADIO HEALTH (BLER %) ---\033[0m" << std::endl;
+
+//     for (uint32_t i = 0; i < 4; ++i) {
+//         uint16_t rnti = i + 1; // Vérifie tes RNTI dans les logs
+//         uint32_t nodeId = i + 3;
+
+//         // --- Downlink ---
+//         uint32_t dlTotal = g_dlAck[rnti] + g_dlNack[rnti];
+//         double dlBler = (dlTotal > 0) ? (static_cast<double>(g_dlNack[rnti]) / dlTotal) * 100.0 : 0.0;
+
+//         // --- Uplink ---
+//         uint32_t ulTotal = g_ulAck[rnti] + g_ulNack[rnti];
+//         double ulBler = (ulTotal > 0) ? (static_cast<double>(g_ulNack[rnti]) / ulTotal) * 100.0 : 0.0;
+
+//         if (dlTotal > 0 || ulTotal > 0) {
+//             std::cout << "Node " << nodeId << " | DL BLER: " << dlBler << "% (" << dlTotal << " pks)"
+//                       << " | UL BLER: " << ulBler << "% (" << ulTotal << " pks)" << std::endl;
+//         } else {
+//             std::cout << "Node " << nodeId << " | Status: Idle (No radio traffic detected)" << std::endl;
+//         }
+
+//         if (table_radio_5g.count(nodeId)) {
+//             table_radio_5g[nodeId].blerDl = dlBler;
+//             table_radio_5g[nodeId].blerUl = ulBler;
+//         }
+
+//         // Reset
+//         g_dlAck[rnti] = 0; g_dlNack[rnti] = 0;
+//         g_ulAck[rnti] = 0; g_ulNack[rnti] = 0;
+//     }
+//     Simulator::Schedule(Seconds(interval), &ComputeBler);
+// }
+
+
+void PrintIncomingJson(std::string source, std::string jsonStr) {
+    NS_LOG_INFO("\033[1;33m[DEBUG " << source << "]\033[0m Content: " << jsonStr);
+    
+    if (jsonStr.empty()) {
+        NS_LOG_WARN("!!! WARNING: JSON received is EMPTY !!!");
+    }
+}
+
+
+// ===========================================
+//    This function for debugging
+// ===========================================
+
+void InstallControlTraffic(NodeContainer ueNodes, Ptr<Node> remoteHost, Ipv4Address remoteHostAddr) {
+    uint16_t ulPort = 11000; // control port (différents de Ditto)
+    uint16_t dlPort = 12000;
+
+    for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
+        Ptr<Node> ue = ueNodes.Get(i);
+        Ipv4Address ueAddr = ue->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+
+        // --- UPLINK CONTROL (UE -> Server) 
+        UdpClientHelper ulClient(remoteHostAddr, ulPort + i);
+        ulClient.SetAttribute("MaxPackets", UintegerValue(4294967295U));
+        ulClient.SetAttribute("Interval", TimeValue(MilliSeconds(100))); 
+        ulClient.SetAttribute("PacketSize", UintegerValue(1600));
+        ApplicationContainer ulApp = ulClient.Install(ue);
+        
+        ulApp.Start(Seconds(1.0));
+        ulApp.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&TraceAppTx));
+
+
+        UdpServerHelper ulServer(ulPort + i);
+        ulServer.Install(remoteHost).Start(Seconds(1.0));
+
+        // --- DOWNLINK CONTROL (Server -> UE)
+        UdpClientHelper dlClient(ueAddr, dlPort + i);
+        dlClient.SetAttribute("MaxPackets", UintegerValue(4294967295U));
+        dlClient.SetAttribute("Interval", TimeValue(MilliSeconds(100)));
+        dlClient.SetAttribute("PacketSize", UintegerValue(1600));
+        ApplicationContainer dlApp = dlClient.Install(remoteHost);
+        dlApp.Start(Seconds(1.0));
+
+        UdpServerHelper dlServer(dlPort + i);
+        dlServer.Install(ue).Start(Seconds(1.0));
+
+        NS_LOG_INFO("Control traffic installed for UE " << i << " (UL Port: " << ulPort+i << ", DL Port: " << dlPort+i << ")");
+    }
+}
+
+
+// ===========================================================================
+// 1. DITTO DATA HANDLER
+// ===========================================================================
+class DittoDataHandler {
+private:
+    std::map<std::string, Ptr<Application>> m_flowApps; 
+
+public:
+    void UpdateNodeMobility(std::string id, double x, double y, double z, double speed = 0.0) {
+        if (thingIdToNode.count(id)) {
+            Ptr<Node> node = thingIdToNode[id];
+            uint32_t nodeId = node->GetId();
+            Ptr<MobilityModel> mobility = node->GetObject<MobilityModel>();
+            if (mobility) {
+                mobility->SetPosition(Vector3D(x, y, z));
+                table_radio_5g[nodeId].currentSpeed = speed; 
+                NS_LOG_INFO("API [Mobility]: " << id << " moved to (" << x << "," << y << ") speed: " << speed);
+            }
+        }
+    }
+
+    Ipv4Address GetNodeIp(Ptr<Node> node) {
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        if (ipv4->GetNInterfaces() > 1) {
+            // L'interface 0 est loopback, l'interface 1 est la 5G ou le P2P
+            return ipv4->GetAddress(1, 0).GetLocal();
+        }
+        return Ipv4Address::GetAny();
+    }
+
+    void UpdateFlowParameters(std::string flowIdFromDitto, std::string srcStr, std::string dstStr, int pSize, double flowInt) {
+    // 1. Nettoyage et mapping des IDs Ditto vers ns-3
+    auto clean = [](std::string n) {
+        n.erase(std::remove(n.begin(), n.end(), '['), n.end());
+        n.erase(std::remove(n.begin(), n.end(), ']'), n.end());
+        if (n == "server") return std::string("my5GNetwork:remoteHost");
+        return std::string("my5GNetwork:" + n);
+    };
+
+    std::string sId = clean(srcStr);
+    std::string dId = clean(dstStr);
+    
+    // 2. Création d'un ID interne unique pour éviter de recréer le même flux
+    std::string internalFlowId = sId + "->" + dId;
+
+    // Vérification de l'existence des noeuds
+    if (thingIdToNode.count(sId) == 0 || thingIdToNode.count(dId) == 0) {
+        std::cout << "\033[1;31m[FLOW-ERROR]\033[0m Node not found: " << sId << " or " << dId << std::endl;
+        return;
+    }
+
+    Ptr<Node> srcNode = thingIdToNode[sId];
+    Ptr<Node> dstNode = thingIdToNode[dId];
+
+    // 3. MISE À JOUR si le flux existe déjà
+    if (m_flowApps.count(internalFlowId)) {
+        Ptr<Application> app = m_flowApps[internalFlowId];
+        app->SetAttribute("Interval", TimeValue(Seconds(flowInt)));
+        app->SetAttribute("PacketSize", UintegerValue(pSize));
+        
+        // Mise à jour des infos pour le SnapshotManager
+        active_flows[internalFlowId].packetSize = pSize;
+        active_flows[internalFlowId].interval = flowInt;
+        
+        std::cout << "\033[1;34m[FLOW-UPDATE]\033[0m " << internalFlowId << " | Int: " << flowInt << "s" << std::endl;
+    }
+    // 4. INSTALLATION si c'est un nouveau flux
+    else {
+        std::cout << "\033[1;32m[FLOW-INSTALL]\033[0m " << sId << " to " << dId << std::endl;
+
+        // Attribution d'un port unique (commence à 9000)
+        uint16_t port = 9000 + m_flowApps.size();
+
+        // Installation du Serveur sur la destination
+        UdpServerHelper serverHelper(port);
+        ApplicationContainer serverApp = serverHelper.Install(dstNode);
+        serverApp.Start(Seconds(0.01));
+
+        // Récupération de l'IP de destination (Interface 1 = 5G ou P2P)
+        Ipv4Address destIp = dstNode->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+        std::cout << "\n adresse de la destination est : " << destIp << std::endl;
+
+        // Installation du Client sur la source
+        UdpClientHelper clientHelper(destIp, port);
+        clientHelper.SetAttribute("MaxPackets", UintegerValue(4294967295U));
+        clientHelper.SetAttribute("Interval", TimeValue(Seconds(flowInt)));
+        clientHelper.SetAttribute("PacketSize", UintegerValue(pSize));
+
+        ApplicationContainer clientApps = clientHelper.Install(srcNode);
+        Ptr<Application> clientPtr = clientApps.Get(0);
+        
+        // Démarrage immédiat (Now + 10ms)
+        clientApps.Start(Seconds(Simulator::Now().GetSeconds() + 1.0));
+
+        // Sauvegarde dans les maps globales
+        m_flowApps[internalFlowId] = clientPtr;
+        
+        FlowInfo info;
+        info.flowId = internalFlowId;
+        info.srcName = srcStr;
+        info.dstName = dstStr;
+        info.packetSize = pSize;
+        info.interval = flowInt;
+        info.srcNode = srcNode;
+        info.dstNode = dstNode;
+        active_flows[internalFlowId] = info;
+    }
+}
+
+};
+
+
+DittoDataHandler g_handler; 
+
+// ===========================================================================
+// 2. DITTO LOGGER
+// ===========================================================================
+class DittoLogger {
+public:
+    void Open(std::string filename) {
+        m_file.open(filename, std::ios::out | std::ios::trunc);
+        m_file << "[\n";
+        m_first = true;
+    }
+    void LogSnapshot(const Json::Value& root) {
+        if (!m_file.is_open()) return;
+        if (!m_first) m_file << ",\n";
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "  ";
+        m_file << Json::writeString(builder, root);
+        m_first = false;
+        m_file.flush();
+    }
+    void Close() {
+        if (m_file.is_open()) { m_file << "\n]"; m_file.close(); }
+    }
+private:
+    std::ofstream m_file;
+    bool m_first;
+};
+
+
+// ===========================================================================
+// 3. DITTO CONTROLLER APPLICATION (UDP Signal + RAM Buffer)
+// ===========================================================================
+class DittoControllerApp : public Application {
+public:
+    DittoControllerApp() : m_port(5000) {}
+    
+    // Setup mis à jour pour accepter le nom du fichier log
+    void Setup(uint16_t port, std::string logFile) { 
+        m_port = port; 
+        m_logFileName = logFile;
+    }
+
+private:
+    uint16_t m_port;
+    Ptr<Socket> m_socket;
+    std::string m_logFileName;
+    std::string m_bufferPath = "/dev/shm/ditto_buffer.json"; 
+    
+    DittoLogger m_logger;       
+
+    virtual void StartApplication() override {
+        m_logger.Open(m_logFileName);
+
+        m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
+        m_socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), m_port));
+        m_socket->SetRecvCallback(MakeCallback(&DittoControllerApp::HandleRead, this));
+        
+       NS_LOG_INFO("[NS3] Ready. Waiting for UDP signals on port " << m_port << "...");
+    }
+
+    virtual void StopApplication() override {
+        m_logger.Close();
+        if (m_socket) m_socket->Close();
+    }
+
+    void HandleRead(Ptr<Socket> socket) {
+        Ptr<Packet> packet;
+        Address from;
+        while ((packet = socket->RecvFrom(from))) {
+            // Un signal UDP est reçu -> On lit le buffer en RAM
+            std::ifstream ifs(m_bufferPath);
+            if (ifs.is_open()) {
+                std::stringstream ss;
+                ss << ifs.rdbuf();
+                std::string jsonContent = ss.str();
+                ifs.close();
+
+                // PrintIncomingJson("RAM_BUFFER", jsonContent);
+
+                if (!jsonContent.empty()) {
+                    NS_LOG_INFO("Signal received. Processing RAM buffer...");
+                    ProcessJson(jsonContent); 
+                }
+            }
+        }
+    }
+
+   void ProcessJson(std::string jsonStr) {
+    Json::Value root;
+    Json::CharReaderBuilder builder;
+    std::string errors;
+    std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+    if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.size(), &root, &errors)) return;
+
+    if (root.isArray()) {
+        for (const auto& item : root) {
+            std::string tid = item["thingId"].asString();
+            const Json::Value& attr = item["attributes"];
+
+            // 1. MOBILITY
+            if (attr.isMember("x")) {
+                g_handler.UpdateNodeMobility(tid, attr["x"].asDouble(), attr["y"].asDouble(), attr["z"].asDouble(), attr.get("speed", 0.0).asDouble());
+            }
+
+            // 2. TRAFIC 
+            if (attr.isMember("src") && attr.isMember("dst")) {
+                g_handler.UpdateFlowParameters(tid, 
+                                             attr["src"].asString(), 
+                                             attr["dst"].asString(), 
+                                             attr.get("packet_size", 1000).asInt(), 
+                                             attr.get("interval", 0.001).asDouble());
+            }
+        }
+    }
+}
+};
+
+
+void LogDataset() {
+    // NS_LOG_INFO("--- DATASET SNAPSHOT ---");
+    for (auto const& [nodeId, radio] : table_radio_5g) {
+        NS_LOG_INFO("Node " << nodeId << " | DL SINR: " << radio.dlSinr << " | UL SINR: " << radio.ulSinr);
+    }
+    Simulator::Schedule(Seconds(1.0), &LogDataset);
+}
+
+
+class SnapshotManager {
+private:
+    std::ofstream m_csvFile;
+    std::ofstream m_jsonFile;
+    double m_snapshotInterval;
+    bool m_isFirstSnapshot = true;
+
+public:
+    // Ouvre les fichiers une seule fois au début
+    void OpenFiles(std::string csvName, std::string jsonName, double snapInterval) {
+        m_snapshotInterval = snapInterval;
+        
+        m_csvFile.open(csvName, std::ios::out);
+        m_jsonFile.open(jsonName, std::ios::out);
+
+        // Header CSV
+        m_csvFile << "timestamp,src,dest,speed_src,speed_dest,posx_src,posy_src,posz_src,"
+                  << "posx_dest,posy_dest,posz_dest,traffic_type,packet_size,interval,"
+                  << "distance,sinr_dl,sinr_ul,mac_thr_dl,mac_thr_ul,"
+                  << "mac_delay_dl,mac_delay_ul,packetLossDl,packetLossUl\n";
+
+        // Début du tableau JSON
+        m_jsonFile << "[\n"; 
+    }
+
+    void DoSnapshot() {
+        double now = Simulator::Now().GetSeconds();
+        Json::Value snapshot; 
+        snapshot["timestamp"] = now;
+
+        // --- 1. REMPLIR LES NODES (Pour le JSON) ---
+        for (auto const& [dittoId, nodePtr] : thingIdToNode) {
+            Json::Value nodeJson;
+            nodeJson["id"] = dittoId.substr(dittoId.find(":") + 1);
+            Ptr<MobilityModel> mob = nodePtr->GetObject<MobilityModel>();
+            Vector pos = mob->GetPosition();
+            nodeJson["x"] = pos.x;
+            nodeJson["y"] = pos.y;
+            nodeJson["speed"] = mob->GetVelocity().GetLength();
+            
+            uint32_t nid = nodePtr->GetId();
+            nodeJson["dl_sinr"] = table_radio_5g[nid].dlSinr;
+            nodeJson["ul_sinr"] = table_radio_5g[nid].ulSinr;
+            snapshot["nodes"].append(nodeJson);
+        }
+
+        // --- 2. REMPLIR LES FLOWS (JSON + CSV) ---
+        for (auto const& [fid, flow] : active_flows) {
+            Ptr<MobilityModel> mobSrc = flow.srcNode->GetObject<MobilityModel>();
+            Ptr<MobilityModel> mobDst = flow.dstNode->GetObject<MobilityModel>();
+            Vector pS = mobSrc->GetPosition();
+            Vector pD = mobDst->GetPosition();
+            // double dist = mobSrc->GetDistanceFrom(mobDst);
+
+            bool isUplink = (flow.srcName.find("ue") != std::string::npos);
+            uint32_t ueId = isUplink ? flow.srcNode->GetId() : flow.dstNode->GetId();
+            UeRadioTable& radio = table_radio_5g[ueId];
+
+            // Données pour le JSON
+            Json::Value flowJson;
+            flowJson["src"] = flow.srcName;
+            flowJson["dst"] = flow.dstName;
+            flowJson["distance_radio"] = radio.distance; 
+            flowJson["dl_throughput"] = radio.macThroughputDl;
+            flowJson["ul_throughput"] = radio.macThroughputUl;
+            flowJson["dl_delay"] = radio.macDelayDl;
+            flowJson["ul_delay"] = radio.macDelayUl;
+            flowJson["dl_packetLoss"] = radio.packetLossDl;
+            flowJson["ul_packetLoss"] = radio.packetLossUl;
+            snapshot["flows"].append(flowJson);
+
+            // Données pour le CSV
+            if (m_csvFile.is_open()) {
+                m_csvFile << now << "," << flow.srcName << "," << flow.dstName << ","
+                          << mobSrc->GetVelocity().GetLength() << "," << mobDst->GetVelocity().GetLength() << ","
+                          << pS.x << "," << pS.y << "," << pS.z << ","
+                          << pD.x << "," << pD.y << "," << pD.z << ",UDP,"
+                          << flow.packetSize << "," << flow.interval << ","
+                          << "," << radio.distance << ","
+                          << radio.dlSinr << "," << radio.ulSinr
+                          << radio.macThroughputDl << "," << radio.macThroughputUl << ","
+                          << radio.macDelayDl << "," << radio.macDelayUl << ","
+                          << radio.packetLossDl << "," << radio.packetLossUl << "\n";
+            }
+        }
+
+        if (m_jsonFile.is_open()) {
+            if (!m_isFirstSnapshot) m_jsonFile << ",\n";
+            
+            Json::StreamWriterBuilder builder;
+            builder["indentation"] = ""; //
+            m_jsonFile << Json::writeString(builder, snapshot);
+            
+            m_isFirstSnapshot = false;
+            m_jsonFile.flush();
+            m_csvFile.flush();
+        }
+
+        Simulator::Schedule(Seconds(m_snapshotInterval), &SnapshotManager::DoSnapshot, this);
+    }
+
+    void Close() {
+        if (m_jsonFile.is_open()) {
+            m_jsonFile << "\n]"; 
+            m_jsonFile.close();
+        }
+        if (m_csvFile.is_open()) m_csvFile.close();
+    }
+};
+
+
+SnapshotManager g_snapshotMgr;
+
+
+// ===========================================================================
+// 4. MAIN
+// ===========================================================================
+
+int main(int argc, char *argv[]) {
+
+    // --- A. NODES ---
+    NodeContainer tapNodes, gnbNodes, ueNodes, remoteHost;
+    tapNodes.Create(2); gnbNodes.Create(1); ueNodes.Create(4); remoteHost.Create(1);
+
+    // --- B. MOBILITY ---
+    MobilityHelper mobility;
+    mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    mobility.Install(tapNodes);
+    mobility.Install(gnbNodes);
+    mobility.Install(ueNodes); 
+    mobility.Install(remoteHost);
+
+    gnbNodes.Get(0)->GetObject<MobilityModel>()->SetPosition(Vector(500.0, 500.0, 0.0));
+
+    // On décale les UEs pour qu'ils ne soient pas sur le gNB
+    for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
+        ueNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(Vector(510.0 + i, 510.0, 0.0));
+    }
+
+
+    // --- C. MAPPING ---
+    thingIdToNode["my5GNetwork:gnb"] = gnbNodes.Get(0);
+    thingIdToNode["my5GNetwork:ue0"] = ueNodes.Get(0);
+    thingIdToNode["my5GNetwork:ue1"] = ueNodes.Get(1);
+    thingIdToNode["my5GNetwork:ue2"] = ueNodes.Get(2);
+    thingIdToNode["my5GNetwork:ue3"] = ueNodes.Get(3);
+    thingIdToNode["my5GNetwork:remoteHost"] = remoteHost.Get(0);
+
+
+    // --- D. CONTROL NETWORK ---
+    InternetStackHelper internetControl;
+    internetControl.Install(tapNodes);
+
+    CsmaHelper csma;
+    csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
+    csma.SetChannelAttribute("Delay", StringValue("1ms"));
+    NetDeviceContainer csmaDevs = csma.Install(tapNodes);
+
+    Ipv4AddressHelper ipv4Control;
+    ipv4Control.SetBase("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer csmaIfaces = ipv4Control.Assign(csmaDevs);
+
+    TapBridgeHelper tapBridge;
+    tapBridge.SetAttribute("Mode", StringValue("UseLocal"));
+    tapBridge.SetAttribute("DeviceName", StringValue("thetap"));
+    tapBridge.Install(tapNodes.Get(0), csmaDevs.Get(0));
+
+    Ptr<DittoControllerApp> dittoApp = CreateObject<DittoControllerApp>();
+    dittoApp->Setup(5000, "ns3_received_history.json");
+    tapNodes.Get(1)->AddApplication(dittoApp);
+    dittoApp->SetStartTime(Seconds(0.1));
+
+
+
+   // --- E. 5G NR ---
+    Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
+    Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
+    nrHelper->SetEpcHelper(epcHelper);
+
+
+    // The config of beamforming is performec particularly to have a strong signal and good QoS values
+    // These params are tunable , their logic has to be re-seen
+
+    Ptr<IdealBeamformingHelper> bfHelper = CreateObject<IdealBeamformingHelper>();
+    nrHelper->SetBeamformingHelper(bfHelper);
+
+    nrHelper->SetGnbPhyAttribute("TxPower", DoubleValue(43.0));
+    nrHelper->SetUePhyAttribute("TxPower", DoubleValue(23.0));
+
+
+
+    InternetStackHelper internet5G;
+    internet5G.Install(gnbNodes); 
+    internet5G.Install(ueNodes); 
+    internet5G.Install(remoteHost);
+
+    CcBwpCreator ccBwpCreator;
+    CcBwpCreator::SimpleOperationBandConf bandConf(3.5e9, 100e6, 1);
+    OperationBandInfo band = ccBwpCreator.CreateOperationBandContiguousCc(bandConf);
+    Ptr<NrChannelHelper> channelHelper = CreateObject<NrChannelHelper>();
+    channelHelper->ConfigureFactories("UMa", "Default", "ThreeGpp");
+    channelHelper->AssignChannelsToBands({band});
+
+    NetDeviceContainer gnbDevs = nrHelper->InstallGnbDevice(gnbNodes, CcBwpCreator::GetAllBwps({band}));
+    NetDeviceContainer ueDevs = nrHelper->InstallUeDevice(ueNodes, CcBwpCreator::GetAllBwps({band}));
+    
+    // IP add assignement
+    epcHelper->AssignUeIpv4Address(NetDeviceContainer(ueDevs));
+    
+    // RRC assignement
+    nrHelper->AttachToClosestGnb(ueDevs, gnbDevs);
+
+    Simulator::Schedule(Seconds(1.1), &ComputeThroughput, nrHelper);
+    Simulator::Schedule(Seconds(1.2), &ComputeLatency, nrHelper);
+    Simulator::Schedule(Seconds(1.3), &ComputeDistance, nrHelper, gnbNodes);
+    Simulator::Schedule(Seconds(1.4), &ComputePacketLoss, nrHelper);
+
+
+
+   // BEARER ACTIVATION (Canal de données)
+    for (uint32_t i = 0; i < ueDevs.GetN(); ++i) {
+        Ptr<NetDevice> ueDev = ueDevs.Get(i);
+        Ptr<NrUeNetDevice> nrUeDev = ueDev->GetObject<NrUeNetDevice>();
+        uint64_t imsi = nrUeDev->GetImsi();
+
+        Ptr<NrEpcTft> tft = Create<NrEpcTft>();
+        
+        NrEpsBearer bearer(NrEpsBearer::NGBR_VIDEO_TCP_DEFAULT);
+
+        epcHelper->ActivateEpsBearer(ueDev, imsi, tft, bearer);
+    }
+
+    nrHelper->SetUePhyAttribute("NoiseFigure", DoubleValue(9.0));
+    nrHelper->SetGnbPhyAttribute("NoiseFigure", DoubleValue(5.0));
+
+
+
+    // --- UEs/gnbs  --- //
+
+    ConnectSimulationTraces(ueDevs, gnbDevs, ueNodes);
+
+
+
+
+
+    // --- F. INTERNET ---
+    Ptr<Node> pgw = epcHelper->GetPgwNode();
+    PointToPointHelper p2p;
+    p2p.SetDeviceAttribute("DataRate", StringValue("10Gbps"));
+    p2p.SetChannelAttribute("Delay", StringValue("1ms"));
+    NetDeviceContainer internetDevices = p2p.Install(pgw, remoteHost.Get(0));
+    Ipv4AddressHelper ipv4Internet;
+    ipv4Internet.SetBase("1.0.0.0", "255.0.0.0");
+    Ipv4InterfaceContainer internetIpIfaces = ipv4Internet.Assign(internetDevices);
+
+    Ipv4StaticRoutingHelper ipv4RoutingHelper;
+    Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting(remoteHost.Get(0)->GetObject<Ipv4>());
+    // remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), internetIpIfaces.GetAddress(0), 1);
+    remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), Ipv4Address("1.0.0.1"), 1);
+    Ipv4StaticRoutingHelper staticRouting;
+    for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
+        Ptr<Ipv4StaticRouting> ueStaticRouting = staticRouting.GetStaticRouting(ueNodes.Get(i)->GetObject<Ipv4>());
+        ueStaticRouting->SetDefaultRoute(Ipv4Address("7.0.0.1"), 1);
+    }
+    
+    // FIX MOBILITY
+    for (uint32_t i = 0; i < NodeList::GetNNodes(); ++i) {
+        Ptr<Node> n = NodeList::GetNode(i);
+        if (!n->GetObject<MobilityModel>()) mobility.Install(n);
+    }
+
+
+    g_snapshotMgr.OpenFiles("dataset.csv", "dataset.json", g_captureInterval);
+    
+    Simulator::Schedule(Seconds(1.0), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
+
+    AnimationInterface anim("simulation-5g-ditto.xml");
+    anim.SetConstantPosition(tapNodes.Get(0), 0, 100);
+    anim.SetConstantPosition(tapNodes.Get(1), 20, 100);
+    anim.SetConstantPosition(remoteHost.Get(0), 60, 100);
+
+    // Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress(1); 
+    // InstallControlTraffic(ueNodes, remoteHost.Get(0), remoteHostAddr);
+
+    
+    Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (&std::cout);
+    Ipv4StaticRoutingHelper routingHelper;
+    // On affiche la table de routage de l'UE n°0 à 3.0 secondes (quand il commence à envoyer)
+    routingHelper.PrintRoutingTableAt (Seconds (3.0), ueNodes.Get (0), routingStream);
+
+
+    if (g_debugMode) {
+        Simulator::Schedule(Seconds(1.0), &CheckInterfaceStatus, ueNodes.Get(0));
+        Simulator::Schedule(Seconds(5.0), &CheckInterfaceStatus, ueNodes.Get(0));
+        Simulator::Schedule(Seconds(10.0), &CheckInterfaceStatus, ueNodes.Get(0));
+        Simulator::Schedule(Seconds(1.0), &CheckNeighborCache, ueNodes.Get(0));
+        Simulator::Schedule(Seconds(5.0), &CheckNeighborCache, ueNodes.Get(0));
+        Simulator::Schedule(Seconds(10.0), &CheckNeighborCache, ueNodes.Get(0));
+    }
+
+
+        nrHelper->EnableTraces();
+
+    NS_LOG_INFO("Simulation Starting...");
+    Simulator::Stop(Seconds(600.0));
+    Simulator::Run();
+    g_snapshotMgr.Close();
+    Simulator::Destroy();
+    return 0;
+}
+
+
+
+
+
+/*
+
+Old 
+
+*/
+
+// #include "ns3/core-module.h"
+// #include "ns3/network-module.h"
+// #include "ns3/internet-module.h"
+// #include "ns3/mobility-module.h"
+// #include "ns3/csma-module.h"
+// #include "ns3/tap-bridge-module.h"
+// #include "ns3/nr-module.h"
+// #include "ns3/netanim-module.h"
+// #include "json/json.h"
+// #include "ns3/point-to-point-module.h" 
+// #include <iostream>
+// #include <map>
+// #include <string>
+// #include <fstream>
+// #include <vector>
+// #include <chrono>  
+
+// using namespace ns3;
+// using namespace ns3::nr;
+
+// NS_LOG_COMPONENT_DEFINE("Ditto5GControl");
+
+// std::map<std::string, Ptr<Node>> thingIdToNode;
+
+// // Helper to move nodes safely
+// void MoveNode(Ptr<Node> node, double x, double y, double z)
+// {
+//     if (!node) return;
+//     Ptr<MobilityModel> mobility = node->GetObject<MobilityModel>();
+//     if (mobility)
+//     {
+//         Ptr<ConstantPositionMobilityModel> posMob = DynamicCast<ConstantPositionMobilityModel>(mobility);
+//         if (posMob) {
+//             posMob->SetPosition(Vector3D(x, y, z));
+//             NS_LOG_INFO("Moving Node " << node->GetId() << " to (" << x << ", " << y << ", " << z << ")");
+//         }
+//     }
+// }
+
+
+
+// class DittoControllerApp : public Application
+// {
+// public:
+//   DittoControllerApp() : m_port(5000) {}
+//   void Setup(uint16_t port, std::string filename, const std::string& fileIdsName) { 
+//     m_port = port;
+//     m_logFileName = filename;
+//     m_idLogFileName = fileIdsName;
+// }
+
+// private:
+//   uint16_t m_port;
+//   Ptr<Socket> m_socket;
+//   std::string m_logFileName;
+//   std::ofstream m_outputFile;
+//   std::string  m_idLogFileName;
+//   std::ofstream m_idLogFile;
+//   Ptr<Socket> m_listenSocket; 
+//   Ptr<Socket> m_activeSocket; // 
+//   std::string m_buffer;
+
+//   std::vector<std::string> m_orderedIds = {
+//       "my5GNetwork:ue0", "my5GNetwork:ue1", "my5GNetwork:ue2", "my5GNetwork:ue3", "my5GNetwork:gnb"
+//   };
+
+//   virtual void StartApplication() override
+//   {
+//     std::cout << "[APP] Starting DittoController on Node " << GetNode()->GetId() << std::endl;
+    
+//     m_outputFile.open(m_logFileName, std::ios::out | std::ios::trunc);
+
+//     if (m_outputFile.is_open()) {
+//         m_outputFile << "ue[0]_x\tue[0]_y\tue[0]_z\tue[1]_x\tue[1]_y\tue[1]_z,"
+//                      << "ue[2]_x\tue[2]_y\tue[2]_z\tue[3]_x\tue[3]_y\tue[3]_z,"
+//                      << "gnb_x\tgnb_y\tgnb_z" << std::endl;
+//     }
+
+//     m_idLogFile.open(m_idLogFileName, std::ios::out | std::ios::trunc);
+//     if (m_idLogFile.is_open()) {
+//             m_idLogFile << "PacketID" << std::endl;
+//     }
+
+
+
+    
+//     // Création du socket TCP
+//     m_listenSocket = Socket::CreateSocket(GetNode(), TcpSocketFactory::GetTypeId());
+//     InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), m_port);
+    
+//     if (m_listenSocket->Bind(local) == -1) {
+//         NS_FATAL_ERROR("Failed to bind socket");
+//     }
+    
+//     m_listenSocket->Listen();
+//     // Callback quand le client Python se connecte
+//     m_listenSocket->SetAcceptCallback(
+//         MakeNullCallback<bool, Ptr<Socket>, const Address &>(),
+//         MakeCallback(&DittoControllerApp::HandleAccept, this)
+//     );
+//   }
+
+//   virtual void StopApplication() override
+//   {
+//     if (m_socket) m_socket->Close();
+//     if (m_outputFile.is_open()) m_outputFile.close(); 
+//     if (m_idLogFile.is_open()) m_idLogFile.close();
+//   }
+
+//   void LogPositionsToFile()
+//   {
+//       if (!m_outputFile.is_open()) return;
+
+//       for (size_t i = 0; i < m_orderedIds.size(); ++i) {
+//           std::string id = m_orderedIds[i];
+//           Ptr<Node> node = thingIdToNode[id];
+//           Vector pos(0,0,0);
+          
+//           if (node) {
+//               Ptr<MobilityModel> mob = node->GetObject<MobilityModel>();
+//               pos = mob->GetPosition();
+//           }
+
+//           m_outputFile << pos.x << "\t" << pos.y << "\t" << pos.z;
+          
+//           if (i < m_orderedIds.size() - 1) {
+//               m_outputFile << "\t"; 
+//           }
+//       }
+//       m_outputFile << std::endl; 
+//       m_outputFile.flush();
+//   }
+
+
+//     void LogPacketId(int packetId)
+//     {
+//         if (m_idLogFile.is_open()) {
+
+//             auto now = std::chrono::system_clock::now();
+//             auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+//                 now.time_since_epoch()
+//             ).count();
+
+//             std::time_t t_c = std::chrono::system_clock::to_time_t(now);
+//             std::tm tm_local = *std::localtime(&t_c);
+//             char buf[64];
+//             auto ms_part = ms_since_epoch % 1000;
+//             std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d.%03lld",
+//                         tm_local.tm_year + 1900, tm_local.tm_mon + 1, tm_local.tm_mday,
+//                         tm_local.tm_hour, tm_local.tm_min, tm_local.tm_sec,
+//                         static_cast<long long>(ms_part));
+
+//             m_idLogFile << packetId << "\t" << ms_since_epoch << "\t" << buf << std::endl;
+//             m_idLogFile.flush();
+//         }
+//     }
+
+
+
+//   void HandleAccept(Ptr<Socket> s, const Address& from)
+//   {
+//     std::cout << "[TCP] New connection from " << from << std::endl;
+//     m_activeSocket = s;
+//     m_activeSocket->SetRecvCallback(MakeCallback(&DittoControllerApp::HandleRead, this));
+//   }
+
+
+//   void HandleRead(Ptr<Socket> socket)
+//   {
+//     Ptr<Packet> packet;
+//     while ((packet = socket->Recv()))
+//     {
+//         if (packet->GetSize() == 0) break;
+
+//         // Extraire les données du paquet
+//         uint8_t *buf = new uint8_t[packet->GetSize()];
+//         packet->CopyData(buf, packet->GetSize());
+//         std::string fragment((char*)buf, packet->GetSize());
+//         delete[] buf;
+
+//         m_buffer += fragment; // Ajouter au buffer global
+
+//         // Chercher le délimiteur \n
+//         size_t pos;
+//         while ((pos = m_buffer.find('\n')) != std::string::npos)
+//         {
+//             std::string line = m_buffer.substr(0, pos);
+//             m_buffer.erase(0, pos + 1);
+            
+//             if (!line.empty()) {
+//                 ProcessJsonAndUpdate(line);
+//             }
+//         }
+//     }
+//   }
+
+
+//     void ProcessJsonAndUpdate(const std::string& jsonContent)
+// {
+//     Json::CharReaderBuilder builder;
+//     Json::Value root;
+//     std::string errs;
+//     std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+//     if (!reader->parse(jsonContent.c_str(), jsonContent.c_str() + jsonContent.size(), &root, &errs)) {
+//         return;
+//     }
+
+//     // Ditto renvoie une liste dans le champ "items"
+//     const Json::Value items = root["items"];
+    
+//     for (const auto& item : items)
+//     {
+//         std::string idRecu = item["thingId"].asString(); // "my5GNetwork:ue0"
+//         const Json::Value& attrs = item["attributes"];
+
+//         // Note: Vérifiez si vos attributs sont dans "mobility/pos/x" ou directement "PosX"
+//         // Si vous utilisez ma hiérarchie précédente :
+//         if (attrs.isMember("mobility")) {
+//             const Json::Value& pos = attrs["mobility"]["pos"];
+//             double x = pos["x"].asDouble();
+//             double y = pos["y"].asDouble();
+//             double z = pos.get("z", 0.0).asDouble();
+
+//             if (thingIdToNode.count(idRecu)) {
+//                 MoveNode(thingIdToNode[idRecu], x, y, z);
+//             }
+//         }
+//     }
+//     LogPositionsToFile();
+// }
+
+
+
+  
+// };
+
+
+// int main(int argc, char *argv[])
+// {
+//     // Enable Logs
+//     LogComponentEnable("Ditto5GControl", LOG_LEVEL_INFO);
+    
+//     std::cout << "[[ SIMULATION SETUP START ]]" << std::endl;
+
+//     // ----------------------------------------------------------
+//     // A. CREATE NODES
+//     // ----------------------------------------------------------
+//     NodeContainer tapNodes; // Node 0 (Tap), Node 1 (DT Controller)
+//     NodeContainer gnbNodes; // Node 2
+//     NodeContainer ueNodes;  // Node 3, 4, 5, 6
+//     NodeContainer remoteHostContainer; // --- AJOUT: Node 7 (Serveur Internet) ---
+    
+//     tapNodes.Create(2);
+//     gnbNodes.Create(1);
+
+//     ueNodes.Create(4);
+//     remoteHostContainer.Create(1); // --- AJOUT ---
+
+//     std::cout << "[SETUP] Nodes Created." << std::endl;
+
+//     // ----------------------------------------------------------
+//     // B. INSTALL INITIAL MOBILITY
+//     // ----------------------------------------------------------
+//     MobilityHelper mobility;
+//     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+//     mobility.Install(tapNodes);
+//     mobility.Install(gnbNodes);
+//     mobility.Install(ueNodes);
+//     mobility.Install(remoteHostContainer); // --- AJOUT ---
+
+//     std::cout << "[SETUP] Initial Mobility Installed." << std::endl;
+
+//     // ----------------------------------------------------------
+//     // C. MAP IDs TO NODES
+//     // ----------------------------------------------------------
+//     thingIdToNode["my5GNetwork:gnb"] = gnbNodes.Get(0);
+//     thingIdToNode["my5GNetwork:ue0"] = ueNodes.Get(0);
+//     thingIdToNode["my5GNetwork:ue1"] = ueNodes.Get(1);
+//     thingIdToNode["my5GNetwork:ue2"] = ueNodes.Get(2);
+//     thingIdToNode["my5GNetwork:ue3"] = ueNodes.Get(3);
+
+//     // ----------------------------------------------------------
+//     // D. CONFIGURE CSMA / CONTROL NETWORK (Nodes 0 & 1)
+//     // ----------------------------------------------------------
+//     // ... Configuration TAP existante inchangée ...
+//     InternetStackHelper internetControl;
+//     internetControl.Install(tapNodes);
+
+//     CsmaHelper csma;
+//     csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
+//     csma.SetChannelAttribute("Delay", StringValue("1ms"));
+//     NetDeviceContainer csmaDevs = csma.Install(tapNodes); 
+
+//     Ipv4AddressHelper ipv4Control;
+//     ipv4Control.SetBase("10.1.1.0", "255.255.255.0");
+//     Ipv4InterfaceContainer csmaIfaces = ipv4Control.Assign(csmaDevs);
+
+//     TapBridgeHelper tapBridge;
+//     tapBridge.SetAttribute("Mode", StringValue("UseLocal"));
+//     tapBridge.SetAttribute("DeviceName", StringValue("thetap"));
+//     tapBridge.Install(tapNodes.Get(0), csmaDevs.Get(0));
+
+//     Ptr<DittoControllerApp> app = CreateObject<DittoControllerApp>();
+//     app->Setup(5000, "dtConnector_all_positions_ns3.txt", "sent_packet_ids_ns3.txt");
+//     tapNodes.Get(1)->AddApplication(app);
+//     app->SetStartTime(Seconds(0.0));
+
+//     // ----------------------------------------------------------
+//     // E. CONFIGURE 5G NETWORK & INTERNET (PGW <-> Server)
+//     // ----------------------------------------------------------
+//     std::cout << "[SETUP] Configuring 5G Network..." << std::endl;
+
+//     // 1. Install Internet Stack on 5G nodes AND Remote Host
+//     InternetStackHelper internet5G;
+//     internet5G.Install(gnbNodes);
+//     internet5G.Install(ueNodes);
+//     internet5G.Install(remoteHostContainer); // --- AJOUT ---
+
+//     // 2. Helpers
+//     Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
+//     Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
+//     nrHelper->SetEpcHelper(epcHelper);
+
+//     // 3. Spectrum Config
+//     CcBwpCreator ccBwpCreator;
+//     const uint8_t numCcPerBand = 1;
+//     CcBwpCreator::SimpleOperationBandConf bandConf(3.5e9, 100e6, numCcPerBand);
+//     OperationBandInfo band = ccBwpCreator.CreateOperationBandContiguousCc(bandConf);
+    
+//     Ptr<NrChannelHelper> channelHelper = CreateObject<NrChannelHelper>();
+//     channelHelper->ConfigureFactories("UMi", "Default", "ThreeGpp");
+//     channelHelper->AssignChannelsToBands({band});
+
+//     // 4. Install 5G Devices
+//     NetDeviceContainer gnbDevs = nrHelper->InstallGnbDevice(gnbNodes, CcBwpCreator::GetAllBwps({band}));
+//     NetDeviceContainer ueDevs = nrHelper->InstallUeDevice(ueNodes, CcBwpCreator::GetAllBwps({band}));
+
+//     // 5. Assign IP addresses to UEs (Network 7.0.0.0/8 by default in EPC)
+//     Ipv4InterfaceContainer ueIpIface = epcHelper->AssignUeIpv4Address(NetDeviceContainer(ueDevs));
+    
+//     // 6. Attach UEs
+//     nrHelper->AttachToClosestGnb(ueDevs, gnbDevs);
+
+//     // --- AJOUT MAJEUR: CONFIGURATION DU REMOTE HOST (INTERNET) ---
+//     std::cout << "[SETUP] Configuring Remote Host (Internet Side)..." << std::endl;
+
+//     // Récupérer le nœud PGW créé par l'EPC Helper
+//     Ptr<Node> pgw = epcHelper->GetPgwNode();
+
+//     // Créer un lien Point-à-Point entre le PGW et le Remote Host (Interface SGi)
+//     PointToPointHelper p2ph;
+//     p2ph.SetDeviceAttribute("DataRate", DataRateValue(DataRate("10Gb/s"))); // Très haut débit (Backbone)
+//     p2ph.SetChannelAttribute("Delay", TimeValue(Seconds(0.010))); // 10ms de latence Internet simulée
+//     p2ph.SetDeviceAttribute("Mtu", UintegerValue(1500));
+
+//     NetDeviceContainer internetDevices = p2ph.Install(pgw, remoteHostContainer.Get(0));
+
+//     // Assigner des IP pour ce lien (Réseau 1.0.0.0/8)
+//     Ipv4AddressHelper ipv4h;
+//     ipv4h.SetBase("1.0.0.0", "255.0.0.0");
+//     Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign(internetDevices);
+//     // internetIpIfaces.GetAddress(0) -> Interface du PGW
+//     // internetIpIfaces.GetAddress(1) -> Interface du Remote Host
+
+//     // Routage Statique : Le Remote Host doit savoir comment atteindre les UEs (7.0.0.0/8)
+//     Ipv4StaticRoutingHelper ipv4RoutingHelper;
+//     Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting(remoteHostContainer.Get(0)->GetObject<Ipv4>());
+//     // Route vers 7.0.0.0 via l'IP du PGW
+//     remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), internetIpIfaces.GetAddress(0), 1);
+
+//     std::cout << "[SETUP] Remote Host Configured. IP: " << internetIpIfaces.GetAddress(1) << std::endl;
+//     // -------------------------------------------------------------
+
+//     // ----------------------------------------------------------
+//     // F. FIX FOR HIDDEN NODES (PGW/SGW Mobility)
+//     // ----------------------------------------------------------
+//     std::cout << "[SETUP] Applying Mobility Fix..." << std::endl;
+//     MobilityHelper hiddenNodeMobility;
+//     hiddenNodeMobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+
+//     for (uint32_t i = 0; i < NodeList::GetNNodes(); ++i)
+//     {
+//         Ptr<Node> n = NodeList::GetNode(i);
+//         if (!n->GetObject<MobilityModel>()) {
+//             hiddenNodeMobility.Install(n);
+//         }
+//     }
+
+//     // ----------------------------------------------------------
+//     // G. VISUALIZATION & RUN
+//     // ----------------------------------------------------------
+//     AnimationInterface anim("ditto-5g-final.xml");
+//     anim.SetConstantPosition(tapNodes.Get(0), 0, 100);
+//     anim.SetConstantPosition(tapNodes.Get(1), 20, 100);
+//     anim.SetConstantPosition(remoteHostContainer.Get(0), 60, 100); // Positionner le serveur
+
+//     std::cout << "[[ RUNNING SIMULATION ]]" << std::endl;
+//     Simulator::Stop(Seconds(600.0));
+//     Simulator::Run();
+//     Simulator::Destroy();
+//     std::cout << "[[ SIMULATION FINISHED ]]" << std::endl;
+
+//     return 0;
+// }
+
+

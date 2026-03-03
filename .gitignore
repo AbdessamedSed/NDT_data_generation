@@ -1,0 +1,35 @@
+# --- OMNeT++ ---
+/omnet/**/out/
+*.vec
+*.sca
+*.vci
+*.anf
+.cproject
+.project
+.settings/
+op_models/
+
+# --- NS-3 ---
+# On ignore tout le dossier build s'il est créé par erreur
+build/
+# Fichiers de trace générés
+*.pcap
+*.tr
+*.xml
+*.log
+# Exécutables (au cas où)
+*.o
+*.so
+
+# --- Eclipse Ditto / Java / IDE ---
+target/
+bin/
+*.class
+.classpath
+.idea/
+*.iml
+.DS_Store
+
+# --- Editeurs ---
+.vscode/
+*~

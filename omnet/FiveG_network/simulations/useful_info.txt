@@ -1,0 +1,151 @@
+**.param-recording = false
+**.statistic-recording = false
+===> Cela empêche les paramètres et les statistiques d’être enregistrés, mais un fichier .sca vide reste généré.
+
+##########################################################################################
+
+record-scalar-results = false
+=====> Avec ça, OMNeT++ ne crée aucun fichier de résultats scalar/vector.
+
+
+
+[General]
+network = src.FiveGNetwork
+sim-time-limit = 620s
+debug-on-errors = true
+ned-path = ../src:../../simu5g-1.4.1/src:../../inet-4.5.4/src
+#debug-on-errors = false
+cmdenv-redirect-output = true
+
+
+
+**.collectSinrStatistics = true
+**.measuredSinrDl.result-recording-modes = +vector
+**.rcvdSinrDl.result-recording-modes = +vector
+
+
+scheduler-class = "omnetpp::cRealTimeScheduler"
+realtimescheduler-scaling = 1.0
+
+
+
+output-scalar-file = results/${configname}.sca
+output-vector-file = results/${configname}.vec
+
+
+[Config Statistics]
+
+
+#record-vector-results = true
+#record-scalar-results = true
+
+
+**.scalar-recording = true
+**.vector-recording = true
+
+
+# Très important pour le gNB
+
+
+**.channelModel = "UMA"
+**.pathlossModel = "P3GPP38901"
+
+# Vector recording for all UEs and gNB
+*.ue[*].mobility.x.vector = true
+*.ue[*].mobility.y.vector = true
+*.ue[*].mobility.z.vector = true
+*.gnb.mobility.x.vector = true
+*.gnb.mobility.y.vector = true
+*.gnb.mobility.z.vector = true
+
+# Configure DTConnector to monitor multiple UEs and the gNB
+*.dtConnector.numMobilityModules = 5
+*.dtConnector.mobilityModulePaths = "ue[0].mobility,ue[1].mobility,ue[2].mobility,ue[3].mobility,gnb.mobility"
+#*.dtConnector.mobilityModulePaths = "ue[0].mobility,ue[1].mobility,ue[2].mobility,gnb.mobility"
+
+# this is the interval of calling handleMessage
+*.dtConnector.samplingInterval = 0.1s
+
+**.cellularNic.nrPhy.collectSinrStatistics = true
+**.cellularNic.phy.collectSinrStatistics = true
+
+**.rcvdSinrDl.result-recording-modes = +vector
+**.rcvdSinrUl.result-recording-modes = +vector
+**.measuredSinrDl.result-recording-modes = +vector
+**.measuredSinrUl.result-recording-modes = +vector
+
+
+
+[Config Single-UE]
+extends = Statistics
+*.gnb.mobility.initialX = 500m
+*.gnb.mobility.initialY = 500m
+*.gnb.mobility.initialZ = 0m
+
+*.numUe = 1
+*.ue[0].mobility.initialX = 600m
+*.ue[0].mobility.initialY = 600m
+*.ue[0].mobility.initialZ = 0m
+
+*.ue[*].macCellId = 0
+*.ue[*].masterId = 0
+*.ue[*].nrMacCellId = 1
+*.ue[*].nrMasterId = 1
+
+*.ue[*].numApps = 1
+*.server.numApps = 1
+
+*.ue[*].app[*].typename = "CbrReceiver"
+*.ue[*].app[*].localPort = 1000
+
+*.server.app[*].typename = "CbrSender"
+*.server.app[*].PacketSize = 1000
+*.server.app[*].sampling_time = 0.1s
+*.server.app[*].destAddress = "ue["+string(ancestorIndex(0))+"]"
+*.server.app[*].destPort = 1000
+*.server.app[*].localPort = 3088+ancestorIndex(0)
+*.server.app[*].startTime = 0.001s
+
+# uniform(0.01s,0.05s)
+
+[Config Four-UEs]
+extends = Single-UE
+
+
+*.numUe = 4
+
+*.ue[0].mobility.typename = "LinearMobility"
+*.ue[0].mobility.speed = 10mps
+*.ue[0].mobility.angle = 180deg
+*.ue[0].mobility.initialX = 900m
+*.ue[0].mobility.initialY = 700m
+*.ue[0].mobility.initialZ = 0m
+*.ue[0].mobility.initFromDisplayString = false
+
+*.ue[1..3].mobility.typename = "AttachedMobility"
+*.ue[1..3].mobility.mobilityModule = "^.^.ue[0].mobility"
+
+*.ue[1].mobility.offsetX = 50m
+*.ue[2].mobility.offsetY = 50m
+*.ue[3].mobility.offsetY = -50m
+*.ue[3].mobility.offsetHeading = 45deg
+
+*.server.numApps = 4
+
+
+##################
+
+MCS / SINR / CQI / etc https://chatgpt.com/share/696619af-f298-800c-9e79-2c15b024a8fb
+
+######
+Les noms des paramètres dans les applications dans omnetpp
+
+ANALYSE app[0] (Type: simu5g.apps.cbr.CbrSender)
+Parametres disponibles: [localPort] [destPort] [destAddress] [packetSize] [samplingTime] [startTime] [finishTime] [tos]
+SUCCES: Flux DL ajouté pour app[0]
+ANALYSE app[1] (Type: simu5g.apps.cbr.CbrSender)
+Parametres disponibles: [localPort] [destPort] [destAddress] [packetSize] [samplingTime] [startTime] [finishTime] [tos]
+SUCCES: Flux DL ajouté pour app[1]
+ANALYSE app[2] (Type: simu5g.apps.cbr.CbrSender)
+Parametres disponibles: [localPort] [destPort] [destAddress] [packetSize] [samplingTime] [startTime] [finishTime] [tos]
+SUCCES: Flux DL ajouté pour app[2]

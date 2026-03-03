@@ -1,0 +1,58 @@
+1) Pourquoi l architecture entre ditto et ns3:
+a==> on opte pour le signal UDP + la mémoire RAM :
+un signal léger udp pour dire à ns3 voilà y a des données nouvelles pour les récupérer à partir de la mémoire RAM
+Le Polling est un événement répétitif : Dans ns-3, pour faire du polling, vous devez programmer un événement Simulator::Schedule(MilliSeconds(1), &CheckRAM). Cela surcharge la "Event List" de ns-3 avec des milliers d'événements inutiles qui doivent être triés et exécutés en permanence.
+Pour savoir si le fichier a changé, ns-3 doit lire le fichier, comparer son contenu ou vérifier sa date de modification toutes les X millisecondes.
+Si le jumeau numérique ne change pas pendant 1 seconde, et que vous vérifiez toutes les 1ms, vous avez fait 1000 accès RAM pour rien.
+Ces cycles sont volés au moteur de calcul 5G de ns-3.
+
+L'UDP est un événement externe asynchrone : Le signal UDP arrive via le SocketCallback. Pour ns-3, c'est comme si "le monde extérieur frappait à la porte". Il n'y a pas d'événement programmé dans la file d'attente qui tourne à vide.
+
+Certes, traiter l'interruption UDP consomme des cycles (lecture du socket, passage du noyau à l'espace utilisateur). Mais cette consommation est unique et liée à l'événement. Le polling, lui, consomme des cycles continuellement, ce qui crée un "bruit de fond" processeur. Dans une simulation de recherche où l'on mesure des performances à la microseconde près (comme en 5G NR), minimiser ce bruit de fond est crucial pour la précision des résultats
+
+
+###########################################################################################################################################################
+###########################################################################################################################################################
+###########################################################################################################################################################
+
+
+b==> pourquoi pas TCP?
+
+1) TCP pose un problème au niveau du protocole ARN , on doit faire la résoluation , ce qui pose un prpblème avec une interface virtuelle du ns3, au contraire UDP est plus facile avec Scapy où on peut mettre l'adresse MAC de l'interface lors de l'instruction du paquet
+
+En effet, le protocole TCP pose une difficulté structurelle majeure dans les environnements d'émulation : la dépendance au protocole ARP (Address Resolution Protocol). Dans une pile réseau standard, avant d'établir la connexion TCP (handshake), l'hôte Linux doit résoudre l'adresse MAC correspondant à l'IP du simulateur. Or, au sein d'une interface virtuelle comme le TapBridge de ns-3, ces requêtes ARP échouent fréquemment ou subissent des délais de traitement incompatibles avec les temporisateurs du noyau Linux. Cela conduit inévitablement à des erreurs de type "No route to host" ou "Connection timed out", brisant la continuité de la synchronisation du Jumeau Numérique.
+À l'inverse, l'approche par UDP combinée à Scapy offre une robustesse supérieure grâce au mapping statique de couche liaison (L2). En utilisant Scapy, nous ne dépendons plus des mécanismes de résolution automatique du système d'exploitation. Nous injectons directement une trame Ethernet brute où l'adresse MAC de destination est explicitement définie dès la construction du paquet.
+
+1. Indépendance Vis-à-vis du Noyau : TCP est géré par le noyau (Kernel) qui est strict. UDP+Scapy est géré par votre application, ce qui vous donne un contrôle total sur la trame.
+2. Bypassing de l'ARP : C'est l'argument massue. En spécifiant la MAC, vous supprimez la phase de "question-réponse" sur le réseau qui est la source principale de bugs dans les simulateurs.
+3. Déterminisme : En supprimant le handshake TCP et la résolution ARP, vous transformez une communication complexe en une simple impulsion (un signal), ce qui est beaucoup plus proche du comportement d'une interruption matérielle réelle.
+
+
+2) Surcharge CPU : La pile TCP doit gérer le contrôle de congestion (ex: Cubic, Reno), le contrôle de flux, les fenêtres glissantes et les temporisateurs de réémission (Retransmission Timeouts).
+
+Consommation de ressources : Dans une configuration d'émulation, ces calculs sont soit effectués par le noyau de l'hôte (mode EmuTAP), soit simulés par ns-3. Dans les deux cas, la synchronisation de ces états complexes entre le monde réel et le monde simulé consomme des cycles CPU critiques qui réduisent la fenêtre temporelle disponible pour le calcul de la topologie réseau.
+
+Sensibilité à la gigue (Jitter) : TCP est extrêmement sensible aux variations de délai. En mode temps réel, si ns-3 subit une micro-latence due à une surcharge CPU, cela peut déclencher des mécanismes de retransmission TCP injustifiés dans les applications réelles, créant une "tempête de paquets" qui sature définitivement la simulation.
+
+Ref=> [1] : @ARTICLE{10943112,
+  author={Ottens, Martin and Deutschmann, Jörg and Hielscher, Kai-Steffen and German, Reinhard},
+  journal={IEEE Access}, 
+  title={Performance Evaluation of ns-3 Real-Time Emulation}, 
+  year={2025},
+  volume={13},
+  number={},
+  pages={59544-59559},
+  keywords={Real-time systems;Network topology;Emulation;Topology;Performance evaluation;Throughput;Routing protocols;Computational modeling;Complexity theory;Codes;ns-3;emulation;computer networks;real-time performance;simulation},
+  doi={10.1109/ACCESS.2025.3555478}}
+
+
+###########################################################################################################################################################
+###########################################################################################################################################################
+###########################################################################################################################################################
+
+
+Synthèse "Académique" pour la rédaction
+*"L'architecture retenue repose sur un découplage strict entre le Plan de Données et le Plan de Contrôle.
+Le Plan de Données utilise un segment de mémoire partagée (/dev/shm) pour le transfert massif de l'état du Jumeau Numérique, garantissant une latence d'accès quasi-nulle (O(1)) et s'affranchissant des limites de segmentation réseau (MTU).
+Le Plan de Contrôle utilise une signalisation UDP asynchrone, injectée via Scapy pour contourner les instabilités de résolution d'adresses (ARP) inhérentes aux environnements d'émulation.
+

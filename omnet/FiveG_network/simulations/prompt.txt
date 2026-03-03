@@ -1,0 +1,16 @@
+maintenant on fidcute un point tu sais que je tracial sur l optimisation du réseaudans un jumeau numérique , jai un réseau 5G , et dans les communications on doit surement avoir 
+des up/down messages et des endToEnd entre ues
+alors
+le but c est de mesurer la qualité du réseau dans les é parties (physique et numérique du DT)
+je dois travailler sur l optimisation du réseau de communication entre les 2 pour avoir un DT plus fidèle
+alors, sur le réseau entre les 2 , on aura peut être la freq d envoie des données entre les 2 ; 
+et d autres
+alors pour répliquer le réseau physique dans le virtuel et l'étudier
+y a des paramètres qu on peut l'obliger ( alors on a le réseau physique dans omnetpp et le virtuel dans ns3 pour information)
+par ex , on récupere la position , le type de traffic , le gnb à lequel le ue est rattaché etc
+et on les refait dans ns3
+mais , pour le sinr ,le jitter etc par exemple ce sont des valeurs qu'on mesure par conséquence et pas des valeurs qu'on oblige
+alors le but est d utiliser ceux ci pour mesurer la qualité de DT
+l agent RL doit apprendre ça , pour augmenter ou réduire la freq d envoie par exemple
+on récupère aussi la qualité de réseau de communication par exemple , la latence pour l'inclure
+alors, on doit ici faire un agent RL qui fait ça
