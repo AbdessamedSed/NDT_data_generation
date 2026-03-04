@@ -679,10 +679,10 @@ int main(int argc, char *argv[]) {
     // RRC assignement
     nrHelper->AttachToClosestGnb(ueDevs, gnbDevs);
 
-    Simulator::Schedule(Seconds(1.1), &ComputeThroughput, nrHelper);
-    Simulator::Schedule(Seconds(1.2), &ComputeLatency, nrHelper);
-    Simulator::Schedule(Seconds(1.3), &ComputeDistance, nrHelper, gnbNodes);
-    Simulator::Schedule(Seconds(1.4), &ComputePacketLoss, nrHelper);
+    Simulator::Schedule(Seconds(1.1), &ComputeThroughput, nrHelper, nGnbs, nUes);
+    Simulator::Schedule(Seconds(1.2), &ComputeLatency, nrHelper, nGnbs, nUes);
+    Simulator::Schedule(Seconds(1.3), &ComputeDistance, nrHelper, gnbNodes, nGnbs, nUes);
+    Simulator::Schedule(Seconds(1.4), &ComputePacketLoss, nrHelper, nGnbs, nUes);
 
 
 
@@ -707,8 +707,6 @@ int main(int argc, char *argv[]) {
     // --- UEs/gnbs  --- //
 
     ConnectSimulationTraces(ueDevs, gnbDevs, ueNodes);
-
-
 
 
 

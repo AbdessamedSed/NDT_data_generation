@@ -75,9 +75,9 @@ void UpdateUlSinrTable(uint64_t rnti, SpectrumValue& sinr, SpectrumValue& interf
 void TracePhyStatsDl(uint32_t nodeId, uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPassedCbs);
 void TracePhyStatsUl(uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPassedCbs);
 void OnRrcStateChange(uint32_t nodeId, uint64_t imsi, uint16_t cellId, uint16_t rnti, NrUeRrc::State oldState, NrUeRrc::State newState);
-void ComputeThroughput(Ptr<NrHelper> nrHelper);
-void ComputeLatency(Ptr<NrHelper> nrHelper);
-void ComputeDistance(Ptr<NrHelper> nrHelper, NodeContainer gnbNodes);
-void ComputePacketLoss(Ptr<NrHelper> nrHelper);
+void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes);
+void ComputeLatency(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes);
+void ComputeDistance(Ptr<NrHelper> nrHelper, NodeContainer gnbNodes, uint32_t nGnbs, uint32_t nUes);
+void ComputePacketLoss(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes);
 
 #endif
