@@ -12,3 +12,30 @@ The project integrates:
 
 ## 📁 Repository Structure
 
+/omnet → OMNeT++ project files
+/ns3 → NS-3 simulation modules
+/ditto → Python scripts for Eclipse Ditto interaction
+
+
+---
+
+## ⚙️ Required Software Versions
+
+This project was tested with:
+
+- NS-3 (recommended version: 3.35 or later)
+- OMNeT++ (recommended version: 6.0)
+- Docker (for Eclipse Ditto deployment)
+- Python 3.8+
+
+Other versions may require minor adjustments.
+
+---
+
+## 🚀 Installation
+
+### 1️⃣ Clone the repository
+
+```bash
+git clone https://github.com/AbdessamedSed/NDT_data_generation.git
+cd NDT_data_generation
