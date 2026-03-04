@@ -33,6 +33,8 @@
 #include "ns3/nr-gnb-mac.h"
 #include "ns3/nr-bearer-stats-calculator.h"
 #include "ns3/nr-common.h"
+#include <set> 
+#include <cctype> 
 
 using namespace ns3;
 using namespace ns3::nr;
@@ -174,7 +176,9 @@ public:
     };
 
     std::string sId = clean(srcStr);
+    // std::cout << "sId is  " << sId << std::endl;
     std::string dId = clean(dstStr);
+    // std::cout << "dId is  " << dId << std::endl;
     
     // 2. Création d'un ID interne unique pour éviter de recréer le même flux
     std::string internalFlowId = sId + "->" + dId;
@@ -347,6 +351,8 @@ private:
             std::string tid = item["thingId"].asString();
             const Json::Value& attr = item["attributes"];
 
+
+            // 1. 
             // 1. MOBILITY
             if (attr.isMember("x")) {
                 g_handler.UpdateNodeMobility(tid, attr["x"].asDouble(), attr["y"].asDouble(), attr["z"].asDouble(), attr.get("speed", 0.0).asDouble());
@@ -489,17 +495,101 @@ public:
 SnapshotManager g_snapshotMgr;
 
 
+/**
+ * Reads the initial JSON configuration and prints exactly what it finds.
+ * Uses std::set to ensure each UE/gNB is only counted ONCE.
+ */
+void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueList, std::vector<std::string>& gnbList) {
+    std::ifstream ifs(filePath);
+    if (!ifs.is_open()) {
+        std::cout << "\033[1;31m[PRE-PARSE] ERROR: Could not open " << filePath << "\033[0m" << std::endl;
+        return;
+    }
+
+    Json::Value root;
+    Json::CharReaderBuilder builder;
+    std::string errors;
+    
+    std::set<std::string> uniqueUes;
+    std::set<std::string> uniqueGnbs;
+
+    if (Json::parseFromStream(builder, ifs, &root, &errors)) {
+        if (root.isArray()) {
+            std::cout << "\033[1;34m[PRE-PARSE] Starting Strict JSON scan...\033[0m" << std::endl;
+            
+            for (const auto& item : root) {
+                if (!item.isMember("thingId")) continue;
+                
+                std::string tid = item["thingId"].asString();
+
+                // --- 1. STRICT UE FILTER ---
+                // Must start with "my5GNetwork:ue"
+                // Must NOT contain "_to_" (this filters out flows like server_to_ue)
+                if (tid.find("my5GNetwork:ue") == 0 && tid.find("_to_") == std::string::npos) {
+                    
+                    // Verify that what follows "ue" is actually a number (to avoid "ue_template" etc)
+                    // "my5GNetwork:ue" is 14 characters long
+                    if (tid.length() > 14 && std::isdigit(tid[14])) {
+                        if (uniqueUes.find(tid) == uniqueUes.end()) {
+                            uniqueUes.insert(tid);
+                            std::cout << "  [NODE] Found Physical UE: " << tid << std::endl;
+                        }
+                    }
+                } 
+                // --- 2. STRICT GNB FILTER ---
+                // Must start with "my5GNetwork:gnb"
+                else if (tid.find("my5GNetwork:gnb") == 0 && tid.find("_to_") == std::string::npos) {
+                    if (uniqueGnbs.find(tid) == uniqueGnbs.end()) {
+                        uniqueGnbs.insert(tid);
+                        std::cout << "  [NODE] Found Physical gNB: " << tid << std::endl;
+                    }
+                }
+                else {
+                    // This is likely a flow or a remote host, we ignore it for Node Creation
+                    // std::cout << "  [IGNORE] Skipping Flow/Object: " << tid << std::endl;
+                }
+            }
+        }
+    }
+    ifs.close();
+
+    ueList.assign(uniqueUes.begin(), uniqueUes.end());
+    gnbList.assign(uniqueGnbs.begin(), uniqueGnbs.end());
+
+    std::cout << "\033[1;32m[PRE-PARSE] SUCCESS: " << ueList.size() 
+              << " unique UE nodes and " << gnbList.size() << " gNB nodes identified.\033[0m" << std::endl;
+}
+
+
 // ===========================================================================
 // 4. MAIN
 // ===========================================================================
 
 int main(int argc, char *argv[]) {
 
-    // --- A. NODES ---
-    NodeContainer tapNodes, gnbNodes, ueNodes, remoteHost;
-    tapNodes.Create(2); gnbNodes.Create(1); ueNodes.Create(4); remoteHost.Create(1);
+    // --- DYNAMIC DETECTION OF UEs and GNBs ---
+    std::vector<std::string> discoveredUes;
+    std::vector<std::string> discoveredGnbs;
+    
+    // Path to the shared RAM buffer or your config file
+    std::string configPath = "/dev/shm/ditto_buffer.json"; 
+    PreParseInitialEntities(configPath, discoveredUes, discoveredGnbs);
 
-    // --- B. MOBILITY ---
+    // Fallback if the file is empty or not found
+    if (discoveredUes.empty()) discoveredUes.push_back("my5GNetwork:ue0");
+    if (discoveredGnbs.empty()) discoveredGnbs.push_back("my5GNetwork:gnb");
+
+    uint32_t nUes = discoveredUes.size();
+    uint32_t nGnbs = discoveredGnbs.size();
+
+    // --- A. NODES (DYNAMIC) ---
+    NodeContainer tapNodes, gnbNodes, ueNodes, remoteHost;
+    tapNodes.Create(2); 
+    gnbNodes.Create(nGnbs); 
+    ueNodes.Create(nUes); 
+    remoteHost.Create(1);
+
+    // --- B. MOBILITY SETUP ---
     MobilityHelper mobility;
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     mobility.Install(tapNodes);
@@ -507,20 +597,22 @@ int main(int argc, char *argv[]) {
     mobility.Install(ueNodes); 
     mobility.Install(remoteHost);
 
-    gnbNodes.Get(0)->GetObject<MobilityModel>()->SetPosition(Vector(500.0, 500.0, 0.0));
-
-    // On décale les UEs pour qu'ils ne soient pas sur le gNB
-    for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
+    // Set initial positions dynamically
+    for (uint32_t i = 0; i < nGnbs; ++i) {
+        gnbNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(Vector(500.0 + (i * 100), 500.0, 0.0));
+    }
+    for (uint32_t i = 0; i < nUes; ++i) {
         ueNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(Vector(510.0 + i, 510.0, 0.0));
     }
 
-
-    // --- C. MAPPING ---
-    thingIdToNode["my5GNetwork:gnb"] = gnbNodes.Get(0);
-    thingIdToNode["my5GNetwork:ue0"] = ueNodes.Get(0);
-    thingIdToNode["my5GNetwork:ue1"] = ueNodes.Get(1);
-    thingIdToNode["my5GNetwork:ue2"] = ueNodes.Get(2);
-    thingIdToNode["my5GNetwork:ue3"] = ueNodes.Get(3);
+    // --- C. MAPPING (DYNAMIC) ---
+    // Link Ditto Thing IDs to ns-3 Node Pointers
+    for (uint32_t i = 0; i < nGnbs; ++i) {
+        thingIdToNode[discoveredGnbs[i]] = gnbNodes.Get(i);
+    }
+    for (uint32_t i = 0; i < nUes; ++i) {
+        thingIdToNode[discoveredUes[i]] = ueNodes.Get(i);
+    }
     thingIdToNode["my5GNetwork:remoteHost"] = remoteHost.Get(0);
 
 

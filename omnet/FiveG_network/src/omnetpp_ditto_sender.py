@@ -1,3 +1,4 @@
+
 import subprocess
 import os
 import sys
@@ -95,9 +96,28 @@ class DittoProducer:
         node_id = node['id']
         thing_id = f"{DITTO_NAMESPACE}:{node_id}"
         
-        # Payload simplifié : tout est mis à plat dans attributes
+        # Structure hiérarchique demandée
         payload = {
-            "attributes": node
+            "attributes": {
+                "info": {
+                    "id": node['id'],
+                    "serving_gnb": node['serving_gnb'],
+                },
+                "mobility": {
+                    "pos": {"x": node['x'], "y": node['y'], "z": node['z']},
+                    "speed": node['speed'],
+
+                }
+            },
+            "features": {
+                "radio_link": {
+                    "properties": {
+                        "sinr_dl": node['sinr_dl'],
+                        "sinr_ul": node['sinr_ul'],
+                        "sinr_d2d": node['sinr_d2d']
+                    }
+                }
+            }
         }
         self._send_patch(thing_id, payload)
 
@@ -106,9 +126,17 @@ class DittoProducer:
         dst = self._clean_name(flow['dst'])
         thing_id = f"{DITTO_NAMESPACE}:{src}_to_{dst}"
         
-        # Payload simplifié : tout est mis à plat dans attributes
         payload = {
-            "attributes": flow
+            "attributes": {
+                "parameters": {
+                    "packet_size": flow['packet_size'],
+                    "interval": flow['interval'],
+                    "throughput": flow['throughput'],
+                    "delay" : flow['delay'],
+                    "bler": flow['bler'],
+                    "packet_loss": flow['packet_loss']
+                }
+            }
         }
         self._send_patch(thing_id, payload)
 
@@ -140,6 +168,7 @@ class DittoProducer:
                     with open(self.json_path, "r") as f:
                         content = f.read().strip()
                         if content:
+                            # Sécurité si OMNeT++ n'a pas fermé le crochet
                             if not content.endswith("]"): content += "]"
                             
                             data = json.loads(content)
@@ -163,6 +192,7 @@ class DittoProducer:
                                     print(f"[SYNC] SimTime: {sim_time}s | Nodes: {len(last_snapshot.get('nodes',[]))}")
 
             except (json.JSONDecodeError, Exception) as e:
+                # On ignore les erreurs de lecture pendant l'écriture d'OMNeT++
                 pass
 
             elapsed = time.time() - start_time
