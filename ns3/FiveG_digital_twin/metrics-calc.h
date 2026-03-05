@@ -60,7 +60,8 @@ struct FlowInfo {
     Ptr<Node> dstNode;
 };
 
-extern double g_captureInterval;
+extern double g_snapshotInterval;
+extern std::string g_outputFile;
 extern std::map<std::string, Ptr<Node>> thingIdToNode;
 extern std::map<uint32_t, UeRadioTable> table_radio_5g;
 extern std::map<uint16_t, uint32_t> rnti_to_nodeid;

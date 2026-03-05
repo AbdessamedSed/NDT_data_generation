@@ -1,7 +1,8 @@
 
 #include "metrics-calc.h"
 
-double g_captureInterval = 0.5;
+double g_snapshotInterval = 0.2;
+std::string g_outputFile = "dt_state.json";
 std::map<std::string, Ptr<Node>> thingIdToNode;
 std::map<uint32_t, UeRadioTable> table_radio_5g;
 std::map<uint16_t, uint32_t> rnti_to_nodeid;

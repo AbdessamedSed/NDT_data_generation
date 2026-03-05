@@ -383,111 +383,100 @@ void LogDataset() {
 
 class SnapshotManager {
 private:
-    std::ofstream m_csvFile;
-    std::ofstream m_jsonFile;
-    double m_snapshotInterval;
-    bool m_isFirstSnapshot = true;
+    std::fstream m_file;
+    bool m_isFirst = true;
 
 public:
-    // Ouvre les fichiers une seule fois au début
-    void OpenFiles(std::string csvName, std::string jsonName, double snapInterval) {
-        m_snapshotInterval = snapInterval;
-        
-        m_csvFile.open(csvName, std::ios::out);
-        m_jsonFile.open(jsonName, std::ios::out);
-
-        // Header CSV
-        m_csvFile << "timestamp,src,dest,speed_src,speed_dest,posx_src,posy_src,posz_src,"
-                  << "posx_dest,posy_dest,posz_dest,traffic_type,packet_size,interval,"
-                  << "distance,sinr_dl,sinr_ul,mac_thr_dl,mac_thr_ul,"
-                  << "mac_delay_dl,mac_delay_ul,packetLossDl,packetLossUl\n";
-
-        // Début du tableau JSON
-        m_jsonFile << "[\n"; 
+    void Open(std::string filename) {
+        // On ouvre en lecture/écriture
+        m_file.open(filename, std::ios::out | std::ios::trunc);
+        m_file << "[\n";
+        m_file.flush();
     }
 
     void DoSnapshot() {
+        if (!m_file.is_open()) return;
+
         double now = Simulator::Now().GetSeconds();
-        Json::Value snapshot; 
-        snapshot["timestamp"] = now;
 
-        // --- 1. REMPLIR LES NODES (Pour le JSON) ---
-        for (auto const& [dittoId, nodePtr] : thingIdToNode) {
-            Json::Value nodeJson;
-            nodeJson["id"] = dittoId.substr(dittoId.find(":") + 1);
-            Ptr<MobilityModel> mob = nodePtr->GetObject<MobilityModel>();
-            Vector pos = mob->GetPosition();
-            nodeJson["x"] = pos.x;
-            nodeJson["y"] = pos.y;
-            nodeJson["speed"] = mob->GetVelocity().GetLength();
-            
-            uint32_t nid = nodePtr->GetId();
-            nodeJson["dl_sinr"] = table_radio_5g[nid].dlSinr;
-            nodeJson["ul_sinr"] = table_radio_5g[nid].ulSinr;
-            snapshot["nodes"].append(nodeJson);
+        // Si c'est pas le premier, on recule pour effacer le "]" et mettre une virgule
+        if (!m_isFirst) {
+            m_file.seekp(-2, std::ios::end); 
+            m_file << ",\n";
         }
+        m_isFirst = false;
 
-        // --- 2. REMPLIR LES FLOWS (JSON + CSV) ---
-        for (auto const& [fid, flow] : active_flows) {
-            Ptr<MobilityModel> mobSrc = flow.srcNode->GetObject<MobilityModel>();
-            Ptr<MobilityModel> mobDst = flow.dstNode->GetObject<MobilityModel>();
-            Vector pS = mobSrc->GetPosition();
-            Vector pD = mobDst->GetPosition();
-            // double dist = mobSrc->GetDistanceFrom(mobDst);
+        m_file << "  {\n";
+        m_file << "    \"timestamp\": " << std::fixed << std::setprecision(2) << now << ",\n";
 
-            bool isUplink = (flow.srcName.find("ue") != std::string::npos);
-            uint32_t ueId = isUplink ? flow.srcNode->GetId() : flow.dstNode->GetId();
-            UeRadioTable& radio = table_radio_5g[ueId];
+        // --- SECTION NODES (UEs et gNBs) ---
+        m_file << "    \"nodes\": [\n";
+        bool firstNode = true;
+        for (auto const& [dittoId, nodePtr] : thingIdToNode) {
+            uint32_t nid = nodePtr->GetId();
+            // On filtre pour ne prendre que les équipements physiques
+            if (dittoId.find("ue") != std::string::npos || dittoId.find("gnb") != std::string::npos) {
+                if (!firstNode) m_file << ",\n";
+                
+                Ptr<MobilityModel> mob = nodePtr->GetObject<MobilityModel>();
+                Vector pos = mob->GetPosition();
+                UeRadioTable& radio = table_radio_5g[nid];
 
-            // Données pour le JSON
-            Json::Value flowJson;
-            flowJson["src"] = flow.srcName;
-            flowJson["dst"] = flow.dstName;
-            flowJson["distance_radio"] = radio.distance; 
-            flowJson["dl_throughput"] = radio.macThroughputDl;
-            flowJson["ul_throughput"] = radio.macThroughputUl;
-            flowJson["dl_delay"] = radio.macDelayDl;
-            flowJson["ul_delay"] = radio.macDelayUl;
-            flowJson["dl_packetLoss"] = radio.packetLossDl;
-            flowJson["ul_packetLoss"] = radio.packetLossUl;
-            snapshot["flows"].append(flowJson);
-
-            // Données pour le CSV
-            if (m_csvFile.is_open()) {
-                m_csvFile << now << "," << flow.srcName << "," << flow.dstName << ","
-                          << mobSrc->GetVelocity().GetLength() << "," << mobDst->GetVelocity().GetLength() << ","
-                          << pS.x << "," << pS.y << "," << pS.z << ","
-                          << pD.x << "," << pD.y << "," << pD.z << ",UDP,"
-                          << flow.packetSize << "," << flow.interval << ","
-                          << "," << radio.distance << ","
-                          << radio.dlSinr << "," << radio.ulSinr
-                          << radio.macThroughputDl << "," << radio.macThroughputUl << ","
-                          << radio.macDelayDl << "," << radio.macDelayUl << ","
-                          << radio.packetLossDl << "," << radio.packetLossUl << "\n";
+                m_file << "      { ";
+                m_file << "\"id\": \"" << dittoId << "\", ";
+                m_file << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z << ", ";
+                m_file << "\"speed\": " << radio.currentSpeed << ", ";
+                
+                if (dittoId.find("ue") != std::string::npos) {
+                    m_file << "\"serving_gnb\": \"" << radio.servingGnb << "\", ";
+                    m_file << "\"sinr_dl\": " << radio.dlSinr << ", ";
+                    m_file << "\"sinr_ul\": " << radio.ulSinr << ", ";
+                    m_file << "\"sinr_d2d\": -999";
+                } else {
+                    m_file << "\"type\": \"gNB\"";
+                }
+                m_file << " }";
+                firstNode = false;
             }
         }
+        m_file << "\n    ],\n";
 
-        if (m_jsonFile.is_open()) {
-            if (!m_isFirstSnapshot) m_jsonFile << ",\n";
+        // --- SECTION FLOWS ---
+        m_file << "    \"flows\": [\n";
+        bool firstFlow = true;
+        for (auto const& [fid, flow] : active_flows) {
+            if (!firstFlow) m_file << ",\n";
             
-            Json::StreamWriterBuilder builder;
-            builder["indentation"] = ""; //
-            m_jsonFile << Json::writeString(builder, snapshot);
-            
-            m_isFirstSnapshot = false;
-            m_jsonFile.flush();
-            m_csvFile.flush();
+            bool isDl = (flow.srcName.find("server") != std::string::npos);
+            uint32_t ueId = isDl ? flow.dstNode->GetId() : flow.srcNode->GetId();
+            UeRadioTable& stats = table_radio_5g[ueId];
+
+            m_file << "      { ";
+            m_file << "\"type\": \"" << (isDl ? "DL" : "UL") << "\", ";
+            m_file << "\"src\": \"" << flow.srcName << "\", ";
+            m_file << "\"dst\": \"" << flow.dstName << "\", ";
+            m_file << "\"app\": \"" << (isDl ? "DL_Traffic" : "UL_Traffic") << "\", ";
+            m_file << "\"packet_size\": " << flow.packetSize << ", ";
+            m_file << "\"interval\": " << flow.interval << ", ";
+            m_file << "\"throughput\": " << (isDl ? stats.macThroughputDl : stats.macThroughputUl) << ", ";
+            m_file << "\"delay\": " << (isDl ? stats.macDelayDl : stats.macDelayUl) << ", ";
+            m_file << "\"bler\": " << (isDl ? stats.blerDl : stats.blerUl) << ", ";
+            m_file << "\"packet_loss\": " << (isDl ? stats.packetLossDl : stats.packetLossUl);
+            m_file << " }";
+            firstFlow = false;
         }
+        m_file << "\n    ]\n";
+        
+        // --- FERMETURE DU SNAPSHOT ---
+        m_file << "  }\n]"; // On ferme le tableau à chaque fois pour que le JSON soit valide
+        m_file.flush();
 
-        Simulator::Schedule(Seconds(m_snapshotInterval), &SnapshotManager::DoSnapshot, this);
+        Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, this);
+
     }
 
     void Close() {
-        if (m_jsonFile.is_open()) {
-            m_jsonFile << "\n]"; 
-            m_jsonFile.close();
-        }
-        if (m_csvFile.is_open()) m_csvFile.close();
+        if (m_file.is_open()) m_file.close();
     }
 };
 
@@ -736,11 +725,7 @@ int main(int argc, char *argv[]) {
         if (!n->GetObject<MobilityModel>()) mobility.Install(n);
     }
 
-
-    g_snapshotMgr.OpenFiles("dataset.csv", "dataset.json", g_captureInterval);
     
-    Simulator::Schedule(Seconds(1.0), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
-
     AnimationInterface anim("simulation-5g-ditto.xml");
     anim.SetConstantPosition(tapNodes.Get(0), 0, 100);
     anim.SetConstantPosition(tapNodes.Get(1), 20, 100);
@@ -766,11 +751,16 @@ int main(int argc, char *argv[]) {
     }
 
 
-        nrHelper->EnableTraces();
+    nrHelper->EnableTraces();
+
+    g_snapshotMgr.Open(g_outputFile);
+
+    Simulator::Schedule(Seconds(1.0), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
 
     NS_LOG_INFO("Simulation Starting...");
     Simulator::Stop(Seconds(600.0));
     Simulator::Run();
+
     g_snapshotMgr.Close();
     Simulator::Destroy();
     return 0;
