@@ -468,7 +468,7 @@ public:
         m_file << "\n    ]\n";
         
         // --- FERMETURE DU SNAPSHOT ---
-        m_file << "  }\n]"; // On ferme le tableau à chaque fois pour que le JSON soit valide
+        m_file << "  }\n]"; // 
         m_file.flush();
 
         Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, this);

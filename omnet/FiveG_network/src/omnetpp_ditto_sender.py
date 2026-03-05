@@ -9,8 +9,7 @@ from typing import Dict
 import json
 from datetime import datetime
 
-# --- CONFIGURATION GLOBALE ---
-GLOBAL_FREQ = 10  # Note: 10k Hz est très élevé pour des requêtes HTTP REST
+GLOBAL_FREQ = 10  # 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Chemin vers le fichier JSON généré par OMNeT++
 JSON_FILE_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")

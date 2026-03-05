@@ -1,0 +1,9 @@
+reception_time,id,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,ue[1]_z,ue[2]_x,ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,ue[3]_z,gnb_x
+2026-01-21 10:50:31.038,1,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:31.541,2,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:32.043,3,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:32.546,4,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:33.050,5,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:33.553,6,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:34.056,7,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
+2026-01-21 10:50:34.560,8,ue[0]_x,ue[0]_y,ue[0]_z,ue[1]_x,ue[1]_y,"ue[1]_z,ue[2]_x",ue[2]_y,ue[2]_z,ue[3]_x,ue[3]_y,"ue[3]_z,gnb_x",gnb_y,gnb_z
