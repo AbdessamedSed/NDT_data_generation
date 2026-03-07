@@ -15,6 +15,7 @@ import simu5g.world.radio.LteChannelControl;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.Upf;
 import inet.common.misc.ThruputMeteringChannel;
+import simu5g.nodes.BackgroundCell;
 
 import src.DTConnector;
 
@@ -23,7 +24,8 @@ network FiveGNetwork
 {
     parameters:
         int numUe = default(4);
-        int numBgCells = default(0);
+        int numGnb = default(1);
+        int numBgCells = default(1);
 
         @display("i=block/network2;bgb=1000,1000;bgi=background/pisa");
 
@@ -63,7 +65,7 @@ network FiveGNetwork
         }
        
        
-        gnb: gNodeB {
+        gnb[numGnb]: gNodeB {
             @display("p=726,277;is=vl");
         }
         bgCell[numBgCells]: BackgroundCell {
@@ -82,6 +84,6 @@ network FiveGNetwork
         server.pppg++ <--> Eth10G <--> upf.filterGate;
         
         // L'UPF se connecte au gNodeB (Gate 'ppp')
-        upf.pppg++ <--> Eth10G <--> gnb.ppp;
+        upf.pppg++ <--> Eth10G <--> gnb[0].ppp;
        
 }

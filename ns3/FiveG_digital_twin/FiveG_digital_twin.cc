@@ -351,8 +351,6 @@ private:
             std::string tid = item["thingId"].asString();
             const Json::Value& attr = item["attributes"];
 
-
-            // 1. 
             // 1. MOBILITY
             if (attr.isMember("x")) {
                 g_handler.UpdateNodeMobility(tid, attr["x"].asDouble(), attr["y"].asDouble(), attr["z"].asDouble(), attr.get("speed", 0.0).asDouble());
@@ -692,11 +690,9 @@ int main(int argc, char *argv[]) {
     nrHelper->SetGnbPhyAttribute("NoiseFigure", DoubleValue(5.0));
 
 
-
     // --- UEs/gnbs  --- //
 
     ConnectSimulationTraces(ueDevs, gnbDevs, ueNodes);
-
 
 
     // --- F. INTERNET ---
