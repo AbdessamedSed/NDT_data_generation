@@ -125,7 +125,7 @@ void DTConnector::initialize()
             << "posx_src,posy_src,posz_src,posx_dest,posy_dest,posz_dest,"
             << "traffic_type,packet_size,interval,"
             << "serving_gnb,distance,"
-            << "sinr_dl,sinr_ul,sinr_d2d,"
+            << "sinr_dl,sinr_ul"
             << "mac_thr_dl,mac_thr_ul,mac_delay_dl,mac_delay_ul,blerDlSignal,blerUlSignal,packetLossDlSignal,packetLossUlSignal,"
             // << "bufferOverflowDlSignal,bufferOverflowUlSignal"
             << "\n";
@@ -311,7 +311,7 @@ void DTConnector::exportData()
         size_t b = cleanId.find("[");
         if (b != std::string::npos) {
              cleanId.erase(b, 1); 
-             cleanId.erase(cleanId.find("]"), 1); 
+             cleanId.erase(cleanId.find("]"), 1);
         }
 
         std::string servingGnb = (rawName.find("ue") != std::string::npos) ? getServingGnbId(rawName) : "none";
@@ -321,8 +321,8 @@ void DTConnector::exportData()
                  << "\"speed\": " << speed << ", "
                  << "\"serving_gnb\": \"" << servingGnb << "\", "
                  << "\"sinr_dl\": " << lastSinrDl[i] << ", "
-                 << "\"sinr_ul\": " << lastSinrUl[i] << ", "
-                 << "\"sinr_d2d\": " << lastSinrD2D[i]
+                 << "\"sinr_ul\": " << lastSinrUl[i]
+                //  << "\"sinr_d2d\": " << lastSinrD2D[i]
                  << " }";
     }
     jsonFile << "\n    ],\n"; 
@@ -476,7 +476,7 @@ void DTConnector::exportData()
                 << lastDistance[ueIdx] << ","
                 << lastSinrDl[ueIdx] << ","              
                 << lastSinrUl[ueIdx] << ","              
-                << lastSinrD2D[ueIdx] << ","
+                // << lastSinrD2D[ueIdx] << ","
                 << lastMacThrDl[ueIdx] << ","
                 << lastMacThrUl[ueIdx] << ","
                 << lastMacDelayDl[ueIdx] << ","
