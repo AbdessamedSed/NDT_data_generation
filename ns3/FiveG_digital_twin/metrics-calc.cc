@@ -100,7 +100,7 @@ void TracePhyStatsUl(uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPas
 
 void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
     double samplingInterval = 0.1; // Fréquence d'affichage (0.1s)
-    double windowSize = 1.0;       // Fenêtre de calcul (1s) pour lisser les sauts
+    double windowSize = 0.2;       // Fenêtre de calcul (1s) pour lisser les saut
 
     Ptr<NrBearerStatsCalculator> bearerStats = nrHelper->GetRlcStatsCalculator();
     if (!bearerStats) return;
@@ -127,7 +127,7 @@ void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
             std::cout << "Node " << nodeId << " (UE" << i << ") | DL: " << std::fixed << std::setprecision(2) << thrBytesPerSec << " Bytes/s" << std::endl;
 
             if (table_radio_5g.count(nodeId)) {
-                table_radio_5g[nodeId].macThroughputDl = (thrBytesPerSec * 8.0) / 1e6; // En Mbps pour le JSON
+                table_radio_5g[nodeId].macThroughputDl = thrBytesPerSec;
             }
             history[imsi].erase(history[imsi].begin());
         }

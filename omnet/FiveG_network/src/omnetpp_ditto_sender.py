@@ -12,8 +12,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
 IDS_LOG_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "sent_packet_ids.txt")
 
-UDP_IP_DEST = "10.255.0.2"
-UDP_IP_SRC = "10.255.0.1"
+UDP_IP_DEST = "10.255.0.2"   # L'IP du Receiver
+UDP_IP_SRC = "10.255.0.10"   # L'IP du Sender
 UDP_PORT = 9999
 INTERFACE = "veth-sender"
 

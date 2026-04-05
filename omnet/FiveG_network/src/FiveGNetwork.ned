@@ -70,7 +70,7 @@ network FiveGNetwork
             @display("p=726,277;is=vl");
         }
         bgCell[numBgCells]: BackgroundCell {
-            @display("p=416,277;is=vl");
+            @display("p=510,500;is=vl");
         }
         ue[numUe]: NrUe {
             @display("p=628,411");
