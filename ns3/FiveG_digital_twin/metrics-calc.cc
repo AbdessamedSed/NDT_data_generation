@@ -97,44 +97,101 @@ void TracePhyStatsUl(uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPas
         if (nCbs > nPassedCbs) table_radio_5g[nodeId].packetLossUl += (nCbs - nPassedCbs);
     }
 }
-
 void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
-    double samplingInterval = 0.1; // Fréquence d'affichage (0.1s)
-    double windowSize = 0.2;       // Fenêtre de calcul (1s) pour lisser les saut
-
+    double samplingInterval = 0.1; 
     Ptr<NrBearerStatsCalculator> bearerStats = nrHelper->GetRlcStatsCalculator();
     if (!bearerStats) return;
 
-    // Utilisation d'un historique pour lisser le débit
-    static std::map<uint64_t, std::vector<uint64_t>> history;
-
-    std::cout << "\n\033[1;32m--- 5G THROUGHPUT (Lissé sur 1s - Bytes/s) ---\033[0m" << std::endl;
+    static std::map<uint64_t, uint64_t> lastTotalBytes;
+    static std::map<uint64_t, double> filteredThroughput;
 
     for (uint32_t i = 0; i < nUes; ++i) {
-        uint64_t imsi = i + 2 + nGnbs;
+        uint64_t imsi = i + 1; 
         uint32_t nodeId = i + 2 + nGnbs;
         
-        uint64_t currentDl = 0;
-        for (uint8_t lcid = 1; lcid <= 5; ++lcid) {
-            currentDl += bearerStats->GetDlRxData(imsi, lcid);
-        }
+        // On récupère les données reçues au niveau RLC
+        uint64_t currentTotalBytes = bearerStats->GetDlRxData(imsi, 3);
 
-        // On stocke les valeurs pour calculer la différence sur 1 seconde
-        if (history[imsi].size() >= 10) { // 10 échantillons de 0.1s = 1s
-            double bytesInWindow = currentDl - history[imsi].front();
-            double thrBytesPerSec = bytesInWindow / windowSize;
+        if (lastTotalBytes.count(imsi)) {
+            uint64_t deltaBytes = currentTotalBytes - lastTotalBytes[imsi];
             
-            std::cout << "Node " << nodeId << " (UE" << i << ") | DL: " << std::fixed << std::setprecision(2) << thrBytesPerSec << " Bytes/s" << std::endl;
+            // --- CORRECTION 1 : Retirer l'overhead ---
+            // On estime que 20% à 30% des données RLC sont des headers/padding
+            // Pour coller à Simu5G qui mesure souvent le Payload pur :
+            double payloadBytes = deltaBytes * 0.85; 
+
+            // --- CORRECTION 2 : Calcul du débit ---
+            double instantThr = payloadBytes / samplingInterval;
+
+            // --- CORRECTION 3 : Lissage "Simu5G Style" ---
+            // On utilise un alpha très petit (0.05) pour filtrer les pics brutaux
+            // et obtenir une courbe fluide comme celle d'OMNeT.
+            double alpha = 0.05; 
+            filteredThroughput[imsi] = (alpha * instantThr) + ((1.0 - alpha) * filteredThroughput[imsi]);
 
             if (table_radio_5g.count(nodeId)) {
-                table_radio_5g[nodeId].macThroughputDl = thrBytesPerSec;
+                table_radio_5g[nodeId].macThroughputDl = filteredThroughput[imsi];
             }
-            history[imsi].erase(history[imsi].begin());
         }
-        history[imsi].push_back(currentDl);
+        lastTotalBytes[imsi] = currentTotalBytes;
     }
     Simulator::Schedule(Seconds(samplingInterval), &ComputeThroughput, nrHelper, nGnbs, nUes);
 }
+
+// void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
+//     double samplingInterval = 0.1; // On vérifie toutes les 0.1s
+//     // On veut lisser sur 1 seconde, donc il nous faut 10 échantillons (10 * 0.1s = 1s)
+//     size_t windowSamples = 10; 
+//     double realWindowTime = windowSamples * samplingInterval; // Soit 1.0 seconde
+
+//     Ptr<NrBearerStatsCalculator> bearerStats = nrHelper->GetRlcStatsCalculator();
+//     if (!bearerStats) return;
+
+//     // Map pour stocker l'historique des octets cumulés par IMSI
+//     static std::map<uint64_t, std::vector<uint64_t>> history;
+
+//     std::cout << "\n\033[1;32m--- 5G THROUGHPUT (Lissé sur 1s - Bytes/s) ---\033[0m" << std::endl;
+
+//     for (uint32_t i = 0; i < nUes; ++i) {
+//         // --- Vérification des IDs (IMSI et NodeID) ---
+//         uint64_t imsi = i + 2 + nGnbs; 
+//         uint32_t nodeId = i + 2 + nGnbs;
+        
+//         // 1. Récupérer le cumul des octets reçus (DL)
+//         uint64_t currentTotalBytes = 0;
+//         for (uint8_t lcid = 1; lcid <= 5; ++lcid) {
+//             currentTotalBytes += bearerStats->GetDlRxData(imsi, lcid);
+//         }
+
+//         // 2. Calcul du débit si l'historique est suffisant
+//         if (history[imsi].size() >= windowSamples) {
+//             // Nombre d'octets reçus durant la fenêtre (entre maintenant et il y a 1s)
+//             uint64_t bytesInWindow = currentTotalBytes - history[imsi].front();
+            
+//             // CORRECTION : On divise par le temps réel de la fenêtre (1.0 seconde)
+//             double thrBytesPerSec = (double)bytesInWindow / realWindowTime;
+            
+//             // Affichage propre
+//             std::cout << "Node " << nodeId << " (UE" << i << ") | DL: " 
+//                       << std::fixed << std::setprecision(2) << thrBytesPerSec << " Bytes/s" << std::endl;
+
+//             // Mise à jour de ta table pour le Jumeau Numérique
+//             if (table_radio_5g.count(nodeId)) {
+//                 table_radio_5g[nodeId].macThroughputDl = thrBytesPerSec;
+//             }
+
+//             // Supprimer le plus vieil échantillon pour faire avancer la fenêtre glissante
+//             history[imsi].erase(history[imsi].begin());
+//         }
+
+//         // 3. Ajouter la valeur actuelle à l'historique
+//         history[imsi].push_back(currentTotalBytes);
+//     }
+
+//     // Planifier la prochaine mesure
+//     Simulator::Schedule(Seconds(samplingInterval), &ComputeThroughput, nrHelper, nGnbs, nUes);
+// }
+
 
 // --- LATENCY ---
 void ComputeLatency(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
@@ -145,7 +202,7 @@ void ComputeLatency(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
         return;
     }
 
-    std::cout << "\n\033[1;36m--- 5G LATENCY (ms) ---\033[0m" << std::endl;
+    std::cout << "\n\033[1;36m--- 5G LATENCY (s) ---\033[0m" << std::endl;
 
     for (uint32_t i = 0; i < nUes; ++i) {
         uint64_t imsi = i + 2 + nGnbs;
@@ -155,10 +212,10 @@ void ComputeLatency(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
         std::vector<double> dlStats = bearerStats->GetDlDelayStats(imsi, lcid);
         std::vector<double> ulStats = bearerStats->GetUlDelayStats(imsi, lcid);
 
-        double dlMaxLat = (dlStats.size() >= 3) ? dlStats[2] / 1e6 : 0.0;
-        double ulMaxLat = (ulStats.size() >= 3) ? ulStats[2] / 1e6 : 0.0;
+        double dlMaxLat = (dlStats.size() >= 3) ? dlStats[2] / 1e9 : 0.0;
+        double ulMaxLat = (ulStats.size() >= 3) ? ulStats[2] / 1e9 : 0.0;
 
-        std::cout << "Node " << nodeId << " | DL Max Lat: " << dlMaxLat << " ms" << std::endl;
+        std::cout << "Node " << nodeId << " | DL Max Lat: " << dlMaxLat << "s" << std::endl;
 
         if (table_radio_5g.count(nodeId)) {
             table_radio_5g[nodeId].macDelayDl = dlMaxLat;

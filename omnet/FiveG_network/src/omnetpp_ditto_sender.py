@@ -4,111 +4,96 @@ import os
 import time
 import subprocess
 import sys
-from datetime import datetime
+
+# to run this: sudo ip netns exec ns-omnet python3 omnetpp_ditto_sender.py
+
 
 # --- CONFIGURATION ---
-GLOBAL_FREQ = 10
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
-IDS_LOG_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "sent_packet_ids.txt")
-
-UDP_IP_DEST = "10.255.0.2"   # L'IP du Receiver
-UDP_IP_SRC = "10.255.0.10"   # L'IP du Sender
+GLOBAL_FREQ = 100 # Hz (À faire varier pour tes tests RL)
+UDP_IP_DEST = "10.255.0.1"   # IP du PC (Hôte)
+UDP_IP_SRC = "10.255.0.10"   # IP dans le Namespace
 UDP_PORT = 9999
 INTERFACE = "veth-sender"
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
+SENT_LOG_PATH = os.path.join(SCRIPT_DIR, "sent_packet_ids.txt")
+
 NETWORK_PROFILES = {
-    "1": {"delay": "1ms", "loss": "0%", "rate": "1000mbit", "desc": "Profil 1 : Idéal"},
-    "2": {"delay": "10ms 2ms", "loss": "0.1%", "rate": "100mbit", "desc": "Profil 2 : Très Bon"},
-    "3": {"delay": "40ms 10ms", "loss": "1%", "rate": "20mbit", "desc": "Profil 3 : Moyen"},
-    "4": {"delay": "80ms 35ms", "loss": "5%", "rate": "5mbit", "desc": "Profil 4 : Congestionné"},
-    "5": {"delay": "250ms 50ms", "loss": "15%", "rate": "1mbit", "desc": "Profil 5 : Fortement Dégradé"},
-    "6": {"delay": "20ms 5ms", "loss": "0%", "rate": "10mbit", "desc": "Profil 6 : Lien Limité"}
+    "1": {"desc": "Fibre (Idéal)", "delay": "1ms", "loss": "0%", "rate": "1000mbit", "corrupt": "0.1%"},
+    "2": {"desc": "5G URLLC", "delay": "5ms", "loss": "0.001%", "rate": "500mbit", "corrupt": "0.1%"},
+    "3": {"desc": "5G eMBB", "delay": "20ms", "loss": "4%", "rate": "100mbit", "corrupt": "5%"},
+    "4": {"desc": "4G LTE", "delay": "50ms", "loss": "4%", "rate": "20mbit", "corrupt": "10%"},
+    "5": {"desc": "Satellite", "delay": "150ms", "loss": "10%", "rate": "10mbit", "corrupt": "20%"},
+    "6": {"desc": "Congestion", "delay": "300ms", "loss": "15%", "rate": "2mbit", "corrupt": "30%"}
 }
 
 def apply_network_conditions(config):
-    print(f"\n[TC] Application : {config['desc']}")
-    subprocess.run(f"sudo tc qdisc del dev {INTERFACE} root 2>/dev/null || true", shell=True)
-    cmd = f"sudo tc qdisc add dev {INTERFACE} root netem delay {config['delay']} loss {config['loss']} rate {config['rate']}"
-    result = subprocess.run(cmd, shell=True)
-    if result.returncode == 0:
-        print(f"[TC] Succès sur {INTERFACE}")
-    else:
-        print("[TC] ERREUR : Échec TC.")
+    print(f"\n[TC] Configuration : {config['desc']}")
+    subprocess.run(f"tc qdisc del dev {INTERFACE} root 2>/dev/null || true", shell=True)
+    cmd = f"tc qdisc add dev {INTERFACE} root netem delay {config['delay']} loss {config['loss']} rate {config['rate']}"
+    if config.get("corrupt") and config["corrupt"] != "0%":
+        cmd += f" corrupt {config['corrupt']}"
+    subprocess.run(cmd, shell=True)
+    print(f"[TC] Commande appliquée : {cmd}")
 
 def main():
     if os.getuid() != 0:
-        print("\nCRITICAL: Lancez avec 'sudo' pour modifier le réseau (tc).")
-        sys.exit(1)
+        print("Erreur: Doit être lancé avec sudo (via ip netns exec)"); sys.exit(1)
 
-    os.makedirs(os.path.dirname(IDS_LOG_PATH), exist_ok=True)
-    with open(IDS_LOG_PATH, "w") as f:
-        f.write("SnapshotID\tTimestampMS\tSimTimeInPacket\tStatus\n")
+    # Init Log
+    with open(SENT_LOG_PATH, "w") as f:
+        f.write("SnapshotID\tTimestampMS\tSimTime\tStatus\n")
 
-    print("\n" + "="*60)
-    for k, v in NETWORK_PROFILES.items():
-        print(f" {k}. {v['desc']}")
-    
-    choice = input("\nChoisissez un profil (1-6) : ")
+    print("\n" + "="*40)
+    for k, v in NETWORK_PROFILES.items(): print(f" {k}. {v['desc']}")
+    choice = input("\nChoix du profil : ")
     if choice in NETWORK_PROFILES:
         apply_network_conditions(NETWORK_PROFILES[choice])
-    else:
-        print("Choix invalide."); return
+    else: print("Choix invalide"); return
 
-    # Configuration Socket avec Forçage d'Interface
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # On attache le socket à l'IP source et à l'interface physique virtuelle
-        sock.bind((UDP_IP_SRC, 0)) 
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, INTERFACE.encode())
-    except Exception as e:
-        print(f"Erreur bind interface: {e}")
+    sock.bind((UDP_IP_SRC, 0))
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, INTERFACE.encode())
 
     snapshot_id = 0
-    print(f"\n[*] TX via {INTERFACE} ({UDP_IP_SRC}) -> {UDP_IP_DEST}:{UDP_PORT}")
+    print(f"[*] Envoi via {INTERFACE} vers {UDP_IP_DEST}...")
 
     try:
         while True:
             start_time = time.time()
-            try:
-                if os.path.exists(JSON_PATH):
+            if os.path.exists(JSON_PATH):
+                try:
                     with open(JSON_PATH, "r") as f:
-                        content = f.read().strip()
-                        if content:
-                            if not content.endswith("]"): content += "]"
-                            data = json.loads(content)
-                            if data:
-                                last_snapshot = data[-1]
-                                sim_time_val = last_snapshot.get("timestamp", 0)
-                                snapshot_id += 1
-                                
-                                packet = {
-                                    "snapshot_id": snapshot_id,
-                                    "sim_time": sim_time_val,
-                                    "nodes": last_snapshot.get("nodes", []),
-                                    "flows": last_snapshot.get("flows", [])
-                                }
-                                
-                                message = json.dumps(packet).encode()
-                                sock.sendto(message, (UDP_IP_DEST, UDP_PORT))
-                                
-                                ts_ms = int(time.time() * 1000)
-                                with open(IDS_LOG_PATH, "a") as log_f:
-                                    log_f.write(f"{snapshot_id}\t{ts_ms}\t{sim_time_val}\tSENT\n")
-                                
-                                print(f" [TX] #{snapshot_id} | SimTime: {sim_time_val}s | Latence active: {NETWORK_PROFILES[choice]['delay']}")
-            except Exception:
-                pass
+                        data = json.load(f)
+                        # On prend le dernier état du tableau
+                        last_state = data[-1] if isinstance(data, list) else data
+                        
+                        snapshot_id += 1
+                        packet = {
+                            "snapshot_id": snapshot_id,
+                            "sim_time": last_state.get("timestamp", 0),
+                            "nodes": last_state.get("nodes", []),
+                            "flows": last_state.get("flows", [])
+                        }
+                        
+                        msg = json.dumps(packet).encode()
+                        sock.sendto(msg, (UDP_IP_DEST, UDP_PORT))
+                        
+                        # Logging
+                        ts_ms = int(time.time() * 1000)
+                        with open(SENT_LOG_PATH, "a") as log_f:
+                            log_f.write(f"{snapshot_id}\t{ts_ms}\t{packet['sim_time']}\tSENT\n")
+                        
+                        print(f" [TX] #{snapshot_id} envoyé (SimTime: {packet['sim_time']}s)")
+                except Exception as e:
+                    print(f"Erreur lecture/envoi: {e}")
 
             elapsed = time.time() - start_time
             sleep_time = (1.0 / GLOBAL_FREQ) - elapsed
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-
+            if sleep_time > 0: time.sleep(sleep_time)
     except KeyboardInterrupt:
-        print("\n[!] Arrêt.")
-    finally:
-        print("[*] Script terminé.")
+        print("\nArrêt Sender.")
 
 if __name__ == "__main__":
     main()

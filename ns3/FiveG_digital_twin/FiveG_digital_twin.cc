@@ -637,12 +637,11 @@ int main(int argc, char *argv[]) {
     Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
     nrHelper->SetEpcHelper(epcHelper);
 
-    nrHelper->SetGnbPhyAttribute("TxPower", DoubleValue(46.0));
+    nrHelper->SetGnbPhyAttribute("TxPower", DoubleValue(35.0));
+    nrHelper->SetUePhyAttribute("TxPower", DoubleValue(26.0));
 
-    nrHelper->SetUePhyAttribute("TxPower", DoubleValue(23.0));
 
-
-    nrHelper->SetUePhyAttribute("NoiseFigure", DoubleValue(7.0)); 
+    nrHelper->SetUePhyAttribute("NoiseFigure", DoubleValue(13.0)); 
     nrHelper->SetGnbPhyAttribute("NoiseFigure", DoubleValue(5.0));
 
     // Beamforming

@@ -58,9 +58,9 @@ void DTConnector::initialize()
     int n = mobilityModulePaths.size();
     
     // Init Vecteurs
-    lastSinrDl.assign(n, -999.0); 
-    lastSinrUl.assign(n, -999.0);
-    lastSinrD2D.assign(n, -999.0);
+    lastSinrDl.assign(n, 999.0); 
+    lastSinrUl.assign(n, 999.0);
+    lastSinrD2D.assign(n, 999.0);
 
     lastMacThrDl.assign(n, 0.0);
     lastMacThrUl.assign(n, 0.0);
@@ -233,9 +233,9 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
         if (srcPath.find(hostNames[i]) != std::string::npos) {
             
             // SINR
-            if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = value;
+            if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = 10.0 * log10(value);
             else if (signalID == sinrUlSignal || signalID == measuredSinrUlSignal) lastSinrUl[i] = value;
-            else if (signalID == rcvdSinrD2DSignal) lastSinrD2D[i] = value;
+            else if (signalID == rcvdSinrD2DSignal) lastSinrD2D[i] = 10.0 * log10(value);
 
             else if (signalID == macThrDlSignal) lastMacThrDl[i] = value;
             else if (signalID == macThrUlSignal) lastMacThrUl[i] = value;
