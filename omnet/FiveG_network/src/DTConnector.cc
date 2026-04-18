@@ -339,10 +339,11 @@ void DTConnector::exportData()
         int numApps = server->hasPar("numApps") ? server->par("numApps").intValue() : 0;
         for (int k = 0; k < numApps; k++) {
             cModule* app = server->getSubmodule("app", k);
-            if (!app || !app->hasPar("destAddress")) continue;
+            if (!app || !app->hasPar("destAddresses")) continue;
+
             
             if (now >= app->par("startTime").doubleValue()) {
-                std::string dest = app->par("destAddress").stdstringValue(); 
+                std::string dest = app->par("destAddresses").stdstringValue(); 
                 int dstIdx = findNodeIndexByName(dest);
                 
                 FlowInfo f;
@@ -351,8 +352,8 @@ void DTConnector::exportData()
                 f.phySrc = "gnb"; 
                 f.phyDst = dest;
                 f.ueIndex = dstIdx; // Stats mesurées par le récepteur (UE)
-                f.packetSize = app->par("packetSize").intValue();
-                f.interval = app->par("samplingTime").doubleValue();
+                f.packetSize = app->par("messageLength").intValue();
+                f.interval = app->par("sendInterval").doubleValue();
                 activeFlows.push_back(f);
             }
         }
@@ -367,14 +368,14 @@ void DTConnector::exportData()
         int numApps = host->hasPar("numApps") ? host->par("numApps").intValue() : 0;
         for (int k = 0; k < numApps; k++) {
             cModule* app = host->getSubmodule("app", k);
-            if (!app || !app->hasPar("destAddress")) continue;
+            if (!app || !app->hasPar("destAddresses")) continue;
 
             if (now >= app->par("startTime").doubleValue()) {
-                std::string dest = app->par("destAddress").stdstringValue();
+                std::string dest = app->par("destAddresses").stdstringValue();
                 FlowInfo f;
                 f.srcName = hostNames[i]; f.dstName = dest;
-                f.packetSize = app->par("packetSize").intValue();
-                f.interval = app->par("samplingTime").doubleValue();
+                f.packetSize = app->par("messageLength").intValue();
+                f.interval = app->par("sendInterval").doubleValue();
 
                 if (dest.find("server") != std::string::npos) {
                     f.type = "UL";
