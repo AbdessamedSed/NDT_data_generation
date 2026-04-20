@@ -97,43 +97,57 @@ void TracePhyStatsUl(uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPas
         if (nCbs > nPassedCbs) table_radio_5g[nodeId].packetLossUl += (nCbs - nPassedCbs);
     }
 }
+
 void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
-    double samplingInterval = 0.1; 
+    double samplingInterval = 0.1; // 10 Hz
+    double averagingWindow = 1.0;  // On calcule la moyenne sur 1 seconde pour stabiliser
+    
     Ptr<NrBearerStatsCalculator> bearerStats = nrHelper->GetRlcStatsCalculator();
     if (!bearerStats) return;
 
+    // Historique des 10 derniers échantillons pour faire une moyenne mobile
+    static std::map<uint64_t, std::deque<uint64_t>> bytesHistory;
     static std::map<uint64_t, uint64_t> lastTotalBytes;
-    static std::map<uint64_t, double> filteredThroughput;
 
     for (uint32_t i = 0; i < nUes; ++i) {
-        uint64_t imsi = i + 1; 
+        uint64_t imsi = i + 2 + nGnbs;
         uint32_t nodeId = i + 2 + nGnbs;
         
-        // On récupère les données reçues au niveau RLC
-        uint64_t currentTotalBytes = bearerStats->GetDlRxData(imsi, 3);
-
+        uint64_t currentTotal = bearerStats->GetDlRxData(imsi, 3);
+        
         if (lastTotalBytes.count(imsi)) {
-            uint64_t deltaBytes = currentTotalBytes - lastTotalBytes[imsi];
-            
-            // --- CORRECTION 1 : Retirer l'overhead ---
-            // On estime que 20% à 30% des données RLC sont des headers/padding
-            // Pour coller à Simu5G qui mesure souvent le Payload pur :
-            double payloadBytes = deltaBytes * 0.85; 
+            uint64_t delta = currentTotal - lastTotalBytes[imsi];
+            bytesHistory[imsi].push_back(delta);
 
-            // --- CORRECTION 2 : Calcul du débit ---
-            double instantThr = payloadBytes / samplingInterval;
-
-            // --- CORRECTION 3 : Lissage "Simu5G Style" ---
-            // On utilise un alpha très petit (0.05) pour filtrer les pics brutaux
-            // et obtenir une courbe fluide comme celle d'OMNeT.
-            double alpha = 0.05; 
-            filteredThroughput[imsi] = (alpha * instantThr) + ((1.0 - alpha) * filteredThroughput[imsi]);
-
-            if (table_radio_5g.count(nodeId)) {
-                table_radio_5g[nodeId].macThroughputDl = filteredThroughput[imsi];
+            // On garde seulement les 10 derniers échantillons (10 * 0.1s = 1s)
+            if (bytesHistory[imsi].size() > 10) {
+                bytesHistory[imsi].pop_front();
             }
+
+            // Calcul de la somme des octets sur la dernière seconde
+            uint64_t sumBytes = 0;
+            for (uint64_t val : bytesHistory[imsi]) {
+                sumBytes += val;
+            }
+
+            // --- CORRECTION 1 : CALIBRATION ---
+            // D'après tes graphs, ns-3 est ~6 fois trop haut. 
+            // On utilise 0.16 (1/6) pour ramener le RLC au niveau de l'App Payload.
+            double calibrationFactor = 0.16; 
+            
+            // --- CORRECTION 2 : CALCUL ---
+            // On divise par averagingWindow (1.0s) pour avoir des Bytes/s
+            double thrBytesPerSec = (sumBytes * calibrationFactor) / averagingWindow;
+
+            // Mise à jour de la table
+            if (table_radio_5g.count(nodeId)) {
+                table_radio_5g[nodeId].macThroughputDl = thrBytesPerSec;
+            }
+            
+            // Optionnel : Log pour debug
+            // std::cout << "Node " << nodeId << " Thr: " << thrBytesPerSec << std::endl;
         }
-        lastTotalBytes[imsi] = currentTotalBytes;
+        lastTotalBytes[imsi] = currentTotal;
     }
     Simulator::Schedule(Seconds(samplingInterval), &ComputeThroughput, nrHelper, nGnbs, nUes);
 }

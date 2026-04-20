@@ -9,7 +9,7 @@ import sys
 
 
 # --- CONFIGURATION ---
-GLOBAL_FREQ = 100 # Hz (À faire varier pour tes tests RL)
+GLOBAL_FREQ = 10 # Hz (À faire varier pour tes tests RL)
 UDP_IP_DEST = "10.255.0.1"   # IP du PC (Hôte)
 UDP_IP_SRC = "10.255.0.10"   # IP dans le Namespace
 UDP_PORT = 9999
