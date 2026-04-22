@@ -9,6 +9,10 @@
 #include <simu5g/stack/mac/NrMacUe.h>
 #include <simu5g/stack/mac/LteMacBase.h>
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/rlc/um/LteRlcUm.h"
+#include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 #include <iostream>
 #include <sstream>
 #include <cmath> 
@@ -39,12 +43,28 @@ void DTConnector::initialize()
     macDelayDlSignal = registerSignal("macDelayDl");
     macDelayUlSignal = registerSignal("macDelayUl");
 
-    blerDlSignal = registerSignal("harqErrorRateDl");
-    blerUlSignal = registerSignal("harqErrorRateUl");
+    
     packetLossDlSignal = registerSignal("macPacketLossDl");
     packetLossUlSignal = registerSignal("macPacketLossUl");
-    // bufferOverflowDlSignal = registerSignal("macBufferOverFlowDl");
-    // bufferOverflowUlSignal = registerSignal("macBufferOverFlowUl");
+
+    rlcDelayDl = registerSignal("rlcDelayDl");
+    rlcDelayUl = registerSignal("rlcDelayUl");
+
+    receivedPacketFromUpperLayerSignal = registerSignal("receivedPacketFromUpperLayer");
+    receivedPacketFromLowerLayerSignal = registerSignal("receivedPacketFromLowerLayer");
+    sentPacketToLowerLayerSignal = registerSignal("sentPacketToLowerLayer");
+    sentPacketToUpperLayerSignal = registerSignal("sentPacketToUpperLayer");
+
+    macBufferOverFlowDlSignal = registerSignal("macBufferOverFlowDl");
+    macBufferOverFlowUlSignal = registerSignal("macBufferOverFlowUlS");
+    harqErrorRateDlSignal = registerSignal("harqErrorRateDl");
+    harqErrorRateUlSignal = registerSignal("harqErrorRateUl");
+    harqTxAttemptsDlSignal = registerSignal("harqTxAttemptsDl");
+    harqTxAttemptsUlSignal = registerSignal("harqTxAttemptsUl");
+    // avgServedBlocksDlSignal = registerSignal("avgServedBlocksDl");
+    // avgServedBlocksUlSignal = registerSignal("avgServedBlocksUl");
+
+
 
     // 2. Init Paramètres
     samplingInterval = par("samplingInterval").doubleValue();
@@ -74,8 +94,24 @@ void DTConnector::initialize()
     lastBlerUl.assign(n, 0.0);
     lastPacketLossDl.assign(n, 0.0);
     lastPacketLossUl.assign(n, 0.0);
-    // lastBufferOverflowDl.assign(n, 0.0);
-    // lastBufferOverflowUl.assign(n, 0.0);
+
+    lastRlcDelayDl.assign(n , 0.0);
+    lastRlcDelayUl.assign(n , 0.0);
+    lastReceivedPacketFromUpperLayer.assign(n, 0.0);
+    lastReceivedPacketFromLowerLayer.assign(n , 0.0);
+    lastSentPacketToLowerLayer.assign(n , 0.0);
+    lastSentPacketToUpperLayer.assign(n , 0.0);
+
+    lastMacBufferOverFlowDl.assign(n , 0.0);
+    lastMacBufferOverFlowUl.assign(n , 0.0);
+    lastHarqErrorRateDl.assign(n , 0.0);
+    lastHarqErrorRateUl.assign(n , 0.0);
+    lastHarqTxAttemptsDl.assign(n , 0.0);
+    lastHarqTxAttemptsUl.assign(n , 0.0);
+    // lastAvgServedBlocksDl.assign(n , 0.0);
+    // lastAvgServedBlocksUl.assign(n , 0.0);
+
+   
     
 
     hostNames.clear();
@@ -110,12 +146,29 @@ void DTConnector::initialize()
     sys->subscribe(macDelayDlSignal, this);
     sys->subscribe(macDelayUlSignal, this);
 
-    sys->subscribe(blerDlSignal, this);
-    sys->subscribe(blerUlSignal, this);
+    // sys->subscribe(blerDlSignal, this);
+    // sys->subscribe(blerUlSignal, this);
     sys->subscribe(packetLossDlSignal, this);
     sys->subscribe(packetLossUlSignal, this);
-    // sys->subscribe(bufferOverflowDlSignal, this);
-    // sys->subscribe(bufferOverflowUlSignal, this);
+    
+    sys->subscribe(rlcDelayDl, this);
+    sys->subscribe(rlcDelayUl, this);
+
+    sys->subscribe(receivedPacketFromUpperLayerSignal, this);
+    sys->subscribe(receivedPacketFromLowerLayerSignal, this);
+    sys->subscribe(sentPacketToLowerLayerSignal, this);
+    sys->subscribe(sentPacketToUpperLayerSignal, this);
+
+    sys->subscribe(macBufferOverFlowDlSignal, this);
+    sys->subscribe(macBufferOverFlowUlSignal, this);
+    sys->subscribe(harqErrorRateDlSignal, this);
+    sys->subscribe(harqErrorRateUlSignal, this);
+    sys->subscribe(harqTxAttemptsDlSignal, this);
+    sys->subscribe(harqTxAttemptsUlSignal, this);
+    // sys->subscribe(avgServedBlocksDlSignal, this);
+    // sys->subscribe(avgServedBlocksUlSignal, this);
+
+
     
 
     // Init CSV
@@ -222,7 +275,20 @@ void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, long v
 void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details) {
     processIncomingSignal(source, signalID, value);
 }
+
+void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, uintval_t value, cObject *details)
+{
+    this->receiveSignal(source, signalID, (double)value, details);
+}
+
 void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) {
+    cPacket *pkt = dynamic_cast<cPacket *>(obj);
+    if (pkt == nullptr) return;
+
+    double bytes = (double)pkt->getByteLength(); // On récupère la taille en bytes
+
+    // On redirige vers notre fonction de traitement en passant la taille du paquet
+    processIncomingSignal(source, signalID, bytes);
     
 }
 
@@ -244,10 +310,34 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
 
             else if (signalID == distanceSignal) lastDistance[i] = value; 
 
-            else if (signalID == blerDlSignal) lastBlerDl[i] = value;
-            else if (signalID == blerUlSignal) lastBlerUl[i] = value;
+            // else if (signalID == blerDlSignal) lastBlerDl[i] = value;
+            // else if (signalID == blerUlSignal) lastBlerUl[i] = value;
             else if (signalID == packetLossDlSignal) lastPacketLossDl[i] = value;
             else if (signalID == packetLossUlSignal) lastPacketLossUl[i] = value;
+
+            else if (signalID == rlcDelayDl) lastRlcDelayDl[i] = value;
+            else if (signalID == rlcDelayUl) lastRlcDelayUl[i] = value;
+
+            else if (signalID == receivedPacketFromUpperLayerSignal) lastReceivedPacketFromUpperLayer[i] = value;
+            else if (signalID == receivedPacketFromLowerLayerSignal) lastReceivedPacketFromLowerLayer[i] = value;
+            else if (signalID == sentPacketToLowerLayerSignal) lastSentPacketToLowerLayer[i] = value;
+            else if (signalID == sentPacketToUpperLayerSignal) lastSentPacketToUpperLayer[i] = value;
+
+            else if (signalID == macBufferOverFlowDlSignal) lastMacBufferOverFlowDl[i] = value;
+            else if (signalID == macBufferOverFlowUlSignal) lastMacBufferOverFlowUl[i] = value;
+            
+            else if (signalID == harqErrorRateDlSignal) lastHarqErrorRateDl[i] = value;
+            else if (signalID == harqErrorRateUlSignal) lastHarqErrorRateUl[i] = value;
+            
+            else if (signalID == harqTxAttemptsDlSignal) lastHarqTxAttemptsDl[i] = value;
+            else if (signalID == harqTxAttemptsUlSignal) lastHarqTxAttemptsUl[i] = value;
+            
+            // else if (signalID == avgServedBlocksDlSignal) lastAvgServedBlocksDl[i] = value;
+            // else if (signalID == avgServedBlocksUlSignal) lastAvgServedBlocksUl[i] = value;
+
+
+
+
             // else if (signalID == bufferOverflowDlSignal) lastBufferOverflowDl[i] = value;
             // else if (signalID == bufferOverflowUlSignal) lastBufferOverflowUl[i] = value;
             
@@ -405,7 +495,9 @@ void DTConnector::exportData()
         if (!isFirstFlow) jsonFile << ",\n";
         isFirstFlow = false;
         
-        double thr = 0, delay = 0, bler = 0, loss = 0;
+        double  thr = 0, delay = 0, bler = 0, loss = 0 , rlcDelay = 0 , rcvUpper = 0 , 
+                rcvLower = 0 , sentLower = 0 , sentUpper = 0, buffOverflow = 0, avgBlocks = 0,
+                harqErr = 0, harqTx = 0;
 
         // Application de la philosophie : UL (émetteur) vs DL/D2D (récepteur)
         if (activeFlows[k].type == "UL") {
@@ -413,25 +505,49 @@ void DTConnector::exportData()
             delay = lastMacDelayUl[ueIdx];
             bler = lastBlerUl[ueIdx];
             loss = lastPacketLossUl[ueIdx];
+            rlcDelay = lastRlcDelayUl[ueIdx];
+            buffOverflow = lastMacBufferOverFlowUl[ueIdx];
+            // avgBlocks = lastAvgServedBlocksUl[ueIdx];
+            harqErr = lastHarqErrorRateUl[ueIdx];
+            harqTx = lastHarqTxAttemptsUl[ueIdx];
         } else { 
             thr = lastMacThrDl[ueIdx];
             delay = lastMacDelayDl[ueIdx];
             bler = lastBlerDl[ueIdx];
             loss = lastPacketLossDl[ueIdx];
+            rlcDelay = lastRlcDelayDl[ueIdx];
+            buffOverflow = lastMacBufferOverFlowDl[ueIdx];
+            // avgBlocks = lastAvgServedBlocksDl[ueIdx];
+            harqErr = lastHarqErrorRateDl[ueIdx];
+            harqTx = lastHarqTxAttemptsDl[ueIdx];
         }
 
+        rcvUpper = lastReceivedPacketFromUpperLayer[ueIdx];
+        rcvLower = lastReceivedPacketFromLowerLayer[ueIdx];
+        sentLower = lastSentPacketToLowerLayer[ueIdx];
+        sentUpper = lastSentPacketToUpperLayer[ueIdx];
+
         jsonFile << "      { "
-                 << "\"type\": \"" << activeFlows[k].type << "\", "
-                 << "\"src\": \"" << activeFlows[k].srcName << "\", "
-                 << "\"dst\": \"" << activeFlows[k].dstName << "\", "
-                 << "\"app\": \"" << activeFlows[k].type << "\", " 
-                 << "\"packet_size\": " << activeFlows[k].packetSize << ", "
-                 << "\"interval\": " << activeFlows[k].interval << ", "
-                 << "\"throughput\": " << thr << ", "
-                 << "\"delay\": " << delay << ", "
-                 << "\"bler\": " << bler << ", "
-                 << "\"packet_loss\": " << loss
-                 << " }";
+             << "\"type\": \"" << activeFlows[k].type << "\", "
+             << "\"src\": \"" << activeFlows[k].srcName << "\", "
+             << "\"dst\": \"" << activeFlows[k].dstName << "\", "
+             << "\"app\": \"" << activeFlows[k].type << "\", " 
+             << "\"packet_size\": " << activeFlows[k].packetSize << ", "
+             << "\"interval\": " << activeFlows[k].interval << ", "
+             << "\"throughput\": " << thr << ", "
+             << "\"delay\": " << delay << ", "
+             << "\"bler\": " << bler << ", "
+             << "\"packet_loss\": " << loss << ", "
+             << "\"rlcDelay\": " << rlcDelay << ", "
+             << "\"macBufferOverflow\": " << buffOverflow << ", "
+            //  << "\"avgServedBlocks\": " << avgBlocks << ", "
+             << "\"harqErrorRate\": " << harqErr << ", "
+             << "\"harqTxAttempts\": " << harqTx << ", "
+             << "\"receivedPacketFromUpperLayer\": " << rcvUpper << ", "
+             << "\"receivedPacketFromLowerLayer\": " << rcvLower << ", "
+             << "\"sentPacketToLowerLayer\": " << sentLower << ", "
+             << "\"sentPacketToUpperLayer\": " << sentUpper
+             << " }";
     }
 
     // Fermeture propre du JSON pour validité immédiate

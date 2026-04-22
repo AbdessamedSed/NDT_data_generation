@@ -113,7 +113,7 @@ class DTConnector : public cSimpleModule, public cListener
     std::vector<double> lastMacDelayUl;
 
 
-    simsignal_t blerDlSignal;
+    // simsignal_t blerDlSignal;
     simsignal_t packetLossDlSignal;
     simsignal_t bufferOverflowDlSignal;
 
@@ -121,12 +121,49 @@ class DTConnector : public cSimpleModule, public cListener
     simsignal_t packetLossUlSignal;
     simsignal_t bufferOverflowUlSignal;
 
+    simsignal_t rlcDelayDl;
+    simsignal_t rlcDelayUl;
+
+    simsignal_t receivedPacketFromUpperLayerSignal;
+    simsignal_t receivedPacketFromLowerLayerSignal;
+    simsignal_t sentPacketToLowerLayerSignal;
+    simsignal_t sentPacketToUpperLayerSignal;
+
+    simsignal_t macBufferOverFlowDlSignal;
+    simsignal_t macBufferOverFlowUlSignal;
+    simsignal_t harqErrorRateDlSignal;
+    simsignal_t harqErrorRateUlSignal;
+    simsignal_t harqTxAttemptsDlSignal;
+    simsignal_t harqTxAttemptsUlSignal;
+    // simsignal_t avgServedBlocksDlSignal;
+    // simsignal_t avgServedBlocksUlSignal;
+
+    std::vector<double> lastRlcDelayDl;
+    std::vector<double> lastRlcDelayUl;
+
+    std::vector<double> lastReceivedPacketFromUpperLayer;
+    std::vector<double> lastReceivedPacketFromLowerLayer; 
+    std::vector<double> lastSentPacketToLowerLayer;
+    std::vector<double> lastSentPacketToUpperLayer;
+
+
     std::vector<double> lastBlerDl;
     std::vector<double> lastBlerUl;
     std::vector<double> lastPacketLossDl;
     std::vector<double> lastPacketLossUl;
     std::vector<double> lastBufferOverflowDl;
     std::vector<double> lastBufferOverflowUl;
+
+    std::vector<double> lastMacBufferOverFlowDl;
+    std::vector<double> lastMacBufferOverFlowUl;
+    std::vector<double> lastHarqErrorRateDl;
+    std::vector<double> lastHarqErrorRateUl;
+    std::vector<double> lastHarqTxAttemptsDl;
+    std::vector<double> lastHarqTxAttemptsUl;
+    // std::vector<double> lastAvgServedBlocksDl;
+    // std::vector<double> lastAvgServedBlocksUl;
+
+
 
     struct FlowInfo {
         std::string srcName;
@@ -146,20 +183,29 @@ class DTConnector : public cSimpleModule, public cListener
         double pathLossUl;
         double bufferOverFlowDl;
         double bufferOverFlowUl;
+        double rlcDelayDl;
+        double rlcDelayUl;
+
+        /*
+         Les données en dessous correspondent à de la couche RLC
+
+        */
+        double receivedPacketFromUpperLayer;
+        double receivedPacketFromLowerLayer;
+        double sentPacketToLowerLayer;
+        double sentPacketToUpperLayer;
+
+        double macBufferOverFlowDl;
+        double macBufferOverFlowUl;
+        double harqErrorRateDl;
+        double harqErrorRateUl;
+        double harqTxAttemptsDl;
+        double harqTxAttemptsUl;
+        // double avgServedBlocksDl;
+        // double avgServedBlocksUl;
+
 
     };
-
-    // struct EquipementInfo {
-    //   std::string cleanId;
-    //   std::inet::Coord pos;
-    //   double speed;
-    //   double sinrDl; // Le SINR tjrs concerne le dest
-    //   double sinrUl;
-    //   double sinrSide;
-    //   std::string servingGnb;
-
-
-    // };
 
 
     std::ofstream csvFile;
@@ -177,6 +223,7 @@ class DTConnector : public cSimpleModule, public cListener
 
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, double value, omnetpp::cObject *details) override;
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, long value, omnetpp::cObject *details) override;
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, uintval_t value, cObject *details) override;
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) override;
     
     int findNodeIndexByName(const std::string& name);
