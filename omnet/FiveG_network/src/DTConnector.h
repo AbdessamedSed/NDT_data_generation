@@ -1,42 +1,3 @@
-// #ifndef __SRC_DTCONNECTOR_H_
-// #define __SRC_DTCONNECTOR_H_
-
-// #include <omnetpp.h>
-// #include <inet/mobility/contract/IMobility.h>
-// #include <fstream>
-// #include <vector>
-// #include <string> 
-
-// using namespace omnetpp;
-// using namespace inet;
-
-// namespace src {
-
-// class DTConnector : public cSimpleModule
-// {
-//   protected:
-//     cMessage *sampleTimer = nullptr;
-//     std::vector<IMobility*> mobilityModules;
-//     std::ofstream outputFile;
-
-//     double samplingInterval;
-//     std::vector<std::string> mobilityModulePaths; // 
-//     int numMobilityModules;
-
-//   protected:
-//     virtual void initialize() override;
-//     virtual void handleMessage(cMessage *msg) override;
-//     virtual void finish() override;
-// };
-
-// } // namespace src
-
-// #endif
-
-
-
-
-
 #ifndef __SRC_DTCONNECTOR_H_
 #define __SRC_DTCONNECTOR_H_
 
@@ -45,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
 #include <simu5g/stack/phy/NrPhyUe.h>
 #include <simu5g/stack/mac/NrMacUe.h>
 #include "inet/common/ModuleAccess.h"
@@ -59,11 +21,23 @@ class DTConnector : public cSimpleModule, public cListener
 {
 
   protected:
+
+  // struct GnbConfig {
+  //       std::string sched;
+  //       double qSize;
+  //       double power;
+  //   };
+  //   std::map<std::string, GnbConfig> gnbConfigs; 
+
     cMessage *sampleTimer = nullptr;
     std::vector<IMobility*> mobilityModules;
     std::vector<omnetpp::cModule*> phyModules;
     std::ofstream outputFile;
     std::vector<std::string> hostNames;
+
+    std::string currentSched;    // Ex: "PF", "MAXCI", "DRR"
+    double currentQSize;         // Ex: 2097152 (2MiB en octets)
+    double currentTxPower;       // Ex: 0.1
 
 
 
@@ -217,6 +191,7 @@ class DTConnector : public cSimpleModule, public cListener
     
 
   public:
+    // virtual int numInitStages() const override; 
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;

@@ -89,7 +89,9 @@ network FiveGNetwork
         server.pppg++ <--> Eth10G <--> upf.filterGate;
         
         // L'UPF se connecte au gNodeB (Gate 'ppp')
-        upf.pppg++ <--> Eth10G <--> gnb[0].ppp;
+        for i=0..numGnb-1 {
+            upf.pppg++ <--> Eth10G <--> gnb[i].ppp;
+        }
 
        
 }

@@ -25,8 +25,50 @@ namespace src {
 
 Define_Module(DTConnector);
 
+// int DTConnector::numInitStages() const {
+//     return 1; // On garde 2 stages pour que le réseau soit bien prêt
+// }
+
 void DTConnector::initialize()
 {
+
+
+    // if (stage == 2) {
+    //     cModule* network = getParentModule();
+    //     // Vérifie si le paramètre existe
+    //     if (!network->hasPar("numGnb")) return;
+        
+    //     int numGnb = network->par("numGnb").intValue();
+
+    //     for (int i = 0; i < numGnb; ++i) {
+    //         cModule* gnbModule = network->getSubmodule("gnb", i);
+    //         if (gnbModule) {
+    //             std::string gnbName = "gnb[" + std::to_string(i) + "]";
+    //             GnbConfig config;
+
+    //             // Accès sécurisé par chaînage de sous-modules
+    //             cModule* nic = gnbModule->getSubmodule("nic");
+    //             if (nic) {
+    //                 cModule* mac = nic->getSubmodule("mac");
+    //                 cModule* rlc = nic->getSubmodule("rlc")->getSubmodule("um");
+    //                 cModule* phy = nic->getSubmodule("phy")->getSubmodule("transmitter");
+
+    //                 config.sched = (mac && mac->hasPar("schedulingDisciplineDl")) ? 
+    //                                mac->par("schedulingDisciplineDl").stdstringValue() : "PF";
+                    
+    //                 config.qSize = (rlc && rlc->hasPar("queueSize")) ? 
+    //                                rlc->par("queueSize").doubleValue() : 2097152;
+                    
+    //                 config.power = (phy && phy->hasPar("power")) ? 
+    //                                phy->par("power").doubleValue() : 0.1;
+    //             }
+
+    //             gnbConfigs[gnbName] = config;
+    //             EV << "DTConnector: " << gnbName << " chargé avec Sched=" << config.sched << endl;
+    //         }
+    //     }
+    // }
+
     // 1. Enregistrement Signaux
     sinrDlSignal = registerSignal("rcvdSinrDl");
     sinrUlSignal = registerSignal("rcvdSinrUl");
@@ -167,6 +209,9 @@ void DTConnector::initialize()
     sys->subscribe(harqTxAttemptsUlSignal, this);
     // sys->subscribe(avgServedBlocksDlSignal, this);
     // sys->subscribe(avgServedBlocksUlSignal, this);
+
+
+
 
 
     
@@ -334,12 +379,6 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
             
             // else if (signalID == avgServedBlocksDlSignal) lastAvgServedBlocksDl[i] = value;
             // else if (signalID == avgServedBlocksUlSignal) lastAvgServedBlocksUl[i] = value;
-
-
-
-
-            // else if (signalID == bufferOverflowDlSignal) lastBufferOverflowDl[i] = value;
-            // else if (signalID == bufferOverflowUlSignal) lastBufferOverflowUl[i] = value;
             
             return;
         }
@@ -406,14 +445,33 @@ void DTConnector::exportData()
 
         std::string servingGnb = (rawName.find("ue") != std::string::npos) ? getServingGnbId(rawName) : "none";
 
+        // double qSize = 0;
+        // if (!gnbConfigs.empty()) {
+        //     // On prend la qSize du premier gNB comme référence globale si on veut simplifier
+        //     qSize = gnbConfigs.begin()->second.qSize; 
+        // }
+
         jsonFile << "      { \"id\": \"" << cleanId << "\", "
                  << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z << ", "
                  << "\"speed\": " << speed << ", "
                  << "\"serving_gnb\": \"" << servingGnb << "\", "
                  << "\"sinr_dl\": " << lastSinrDl[i] << ", "
-                 << "\"sinr_ul\": " << lastSinrUl[i]
+                 << "\"sinr_ul\": " << lastSinrUl[i];
+                //  << "\"queue_capacity\": " << qSize;
                 //  << "\"sinr_d2d\": " << lastSinrD2D[i]
-                 << " }";
+
+        // if (rawName.find("gnb") != std::string::npos) {
+        // // Si c'est un gNB, on va chercher ses infos dans la map
+        // if (gnbConfigs.count(rawName)) {
+        //     GnbConfig conf = gnbConfigs[rawName];
+        //     jsonFile << ", \"scheduling_policy\": \"" << conf.sched << "\", "
+        //             << "\"tx_power\": " << conf.power;
+        //     }
+        // }
+
+        jsonFile << " }";
+
+
     }
     jsonFile << "\n    ],\n"; 
 
