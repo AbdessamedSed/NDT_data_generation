@@ -35,6 +35,8 @@
 #include "ns3/nr-common.h"
 #include <set> 
 #include <cctype> 
+#include <curl/curl.h>
+
 
 using namespace ns3;
 using namespace ns3::nr;
@@ -164,10 +166,10 @@ public:
         if (mobility) {
             mobility->SetPosition(Vector3D(x, y, z));
             table_radio_5g[nodeId].currentSpeed = speed; 
-            std::cout << "\033[1;32m[MOBILITY-OK]\033[0m Node " << cleanId << " moved to (" << x << "," << y << ")" << std::endl;
+            // std::cout << "\033[1;32m[MOBILITY-OK]\033[0m Node " << cleanId << " moved to (" << x << "," << y << " , " << z << ")" << std::endl;
         }
     } else {
-        std::cout << "\033[1;31m[MOBILITY-ERROR]\033[0m ID received from PT '" << id << "' (cleaned as '" << cleanId << "') is NOT in thingIdToNode map!" << std::endl;
+        // std::cout << "\033[1;31m[MOBILITY-ERROR]\033[0m ID received from PT '" << id << "' (cleaned as '" << cleanId << "') is NOT in thingIdToNode map!" << std::endl;
     }
 }
 
@@ -180,7 +182,7 @@ public:
         return Ipv4Address::GetAny();
     }
 
-    void UpdateFlowParameters(std::string flowIdFromDitto, std::string srcStr, std::string dstStr, int pSize, double flowInt) {
+    void UpdateFlowParameters(std::string flowIdFromDitto, std::string srcStr, std::string dstStr, int pSize, double flowInt, double thr) {
     // 1. Nettoyage et mapping des IDs Ditto vers ns-3
     auto clean = [](std::string n) {
         n.erase(std::remove(n.begin(), n.end(), '['), n.end());
@@ -199,7 +201,7 @@ public:
 
     // Vérification de l'existence des noeuds
     if (thingIdToNode.count(sId) == 0 || thingIdToNode.count(dId) == 0) {
-        std::cout << "\033[1;31m[FLOW-ERROR]\033[0m Node not found: " << sId << " or " << dId << std::endl;
+        // std::cout << "\033[1;31m[FLOW-ERROR]\033[0m Node not found: " << sId << " or " << dId << std::endl;
         return;
     }
 
@@ -215,12 +217,13 @@ public:
         // Mise à jour des infos pour le SnapshotManager
         active_flows[internalFlowId].packetSize = pSize;
         active_flows[internalFlowId].interval = flowInt;
+        active_flows[internalFlowId].thr = thr;
         
-        std::cout << "\033[1;34m[FLOW-UPDATE]\033[0m " << internalFlowId << " | Int: " << flowInt << "s" << std::endl;
+        // std::cout << "\033[1;34m[FLOW-UPDATE]\033[0m " << internalFlowId << " | Int: " << flowInt << "s" << std::endl;
     }
     // 4. INSTALLATION si c'est un nouveau flux
     else {
-        std::cout << "\033[1;32m[FLOW-INSTALL]\033[0m " << sId << " to " << dId << std::endl;
+        // std::cout << "\033[1;32m[FLOW-INSTALL]\033[0m " << sId << " to " << dId << std::endl;
 
         // Attribution d'un port unique (commence à 9000)
         uint16_t port = 9000 + m_flowApps.size();
@@ -232,7 +235,7 @@ public:
 
         // Récupération de l'IP de destination (Interface 1 = 5G ou P2P)
         Ipv4Address destIp = dstNode->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
-        std::cout << "\n adresse de la destination est : " << destIp << std::endl;
+        // std::cout << "\n adresse de la destination est : " << destIp << std::endl;
 
         // Installation du Client sur la source
         UdpClientHelper clientHelper(destIp, port);
@@ -257,6 +260,7 @@ public:
         info.interval = flowInt;
         info.srcNode = srcNode;
         info.dstNode = dstNode;
+        info.thr = thr;
         active_flows[internalFlowId] = info;
     }
 }
@@ -293,6 +297,10 @@ private:
     bool m_first;
 };
 
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
 
 // ===========================================================================
 // 3. DITTO CONTROLLER APPLICATION (UDP Signal + RAM Buffer)
@@ -301,7 +309,7 @@ class DittoControllerApp : public Application {
 public:
     DittoControllerApp() : m_port(5000) {}
     
-    // Setup mis à jour pour accepter le nom du fichier log
+    // Setup reste identique
     void Setup(uint16_t port, std::string logFile) { 
         m_port = port; 
         m_logFileName = logFile;
@@ -311,7 +319,7 @@ private:
     uint16_t m_port;
     Ptr<Socket> m_socket;
     std::string m_logFileName;
-    std::string m_bufferPath = "/dev/shm/ditto_buffer.json"; 
+    // std::string m_bufferPath = "/dev/shm/ditto_buffer.json"; 
     
     DittoLogger m_logger;       
 
@@ -330,29 +338,32 @@ private:
         if (m_socket) m_socket->Close();
     }
 
+    // MODIFICATION ICI : On lit le paquet, pas le fichier
     void HandleRead(Ptr<Socket> socket) {
-        Ptr<Packet> packet;
-        Address from;
-        while ((packet = socket->RecvFrom(from))) {
-            // Un signal UDP est reçu -> On lit le buffer en RAM
-            std::ifstream ifs(m_bufferPath);
-            if (ifs.is_open()) {
-                std::stringstream ss;
-                ss << ifs.rdbuf();
-                std::string jsonContent = ss.str();
-                ifs.close();
+    Ptr<Packet> packet;
+    Ptr<Packet> lastPacket = nullptr; 
+    Address from;
 
-                // PrintIncomingJson("RAM_BUFFER", jsonContent);
-
-                if (!jsonContent.empty()) {
-                    NS_LOG_INFO("Signal received. Processing RAM buffer...");
-                    ProcessJson(jsonContent); 
-                }
-            }
-        }
+    // 1. On vide TOUTE la file d'attente UDP et on ne garde que le dernier
+    while ((packet = socket->RecvFrom(from))) {
+        lastPacket = packet; 
     }
 
-   void ProcessJson(std::string jsonStr) {
+    // 2. On ne traite QUE le dernier paquet reçu (le plus frais)
+    if (lastPacket) {
+        uint32_t dataSize = lastPacket->GetSize();
+        uint8_t* buffer = new uint8_t[dataSize];
+        lastPacket->CopyData(buffer, dataSize);
+        std::string jsonContent(reinterpret_cast<char*>(buffer), dataSize);
+        delete[] buffer;
+
+        if (!jsonContent.empty()) {
+            ProcessJson(jsonContent); 
+        }
+    }
+}
+
+    void ProcessJson(std::string jsonStr) {
     Json::Value root;
     Json::CharReaderBuilder builder;
     std::string errors;
@@ -360,39 +371,68 @@ private:
 
     if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.size(), &root, &errors)) return;
 
-    if (root.isArray()) {
+    // --- CAS 1 : C'est un OBJET {"n": ..., "f": ...} ---
+    if (root.isObject()) {
+        // Sécurité : on vérifie isObject() AVANT isMember()
+        if (root.isMember("n") && root["n"].isArray()) {
+            for (const auto& node : root["n"]) {
+                g_handler.UpdateNodeMobility(node["id"].asString(), 
+                                            node["x"].asDouble(), 
+                                            node["y"].asDouble(), 
+                                            node["z"].asDouble(), 0.0);
+            }
+        }
+        if (root.isMember("f") && root["f"].isArray()) {
+            for (const auto& flow : root["f"]) {
+                std::string sId = flow["s"].asString();
+                std::string dId = flow["d"].asString();
+                int pSize = flow.get("sz", 1450).asInt();
+                double flowInt = flow.get("i", 0.001).asDouble();
+
+                double thrTheoNs3 = (pSize * 8.0) / flowInt;
+
+                // std::cout << "\n Thr is : " << thrTheoNs3 << std::endl;
+
+
+                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, thrTheoNs3);
+
+                
+            }
+        }
+    }
+    // --- CAS 2 : C'est une LISTE (Format Scapy / Ditto Search) ---
+    else if (root.isArray()) {
         for (const auto& item : root) {
+            if (!item.isMember("thingId") || !item.isMember("attributes")) continue;
+            
             std::string tid = item["thingId"].asString();
             const Json::Value& attr = item["attributes"];
 
-            // 1. MOBILITY
+            // Si c'est un UE ou gNB (contient x, y, z)
             if (attr.isMember("x")) {
-                g_handler.UpdateNodeMobility(tid, attr["x"].asDouble(), attr["y"].asDouble(), attr["z"].asDouble(), attr.get("speed", 0.0).asDouble());
+                g_handler.UpdateNodeMobility(tid, 
+                                            attr["x"].asDouble(), 
+                                            attr["y"].asDouble(), 
+                                            attr.get("z", 0.0).asDouble(), 
+                                            attr.get("speed", 0.0).asDouble());
             }
+            // Si c'est un Flow (contient s et d ou src et dst)
 
-            // 2. TRAFIC 
-            if (attr.isMember("src") && attr.isMember("dst")) {
+            else if (attr.isMember("s") && attr.isMember("d")) {
 
-                double flowInt = attr.get("interval", 0.001).asDouble();
-                int pSize = attr.get("packet_size", 1000).asInt();
+                std::string sId = attr["s"].asString();
+                std::string dId = attr["d"].asString();
+                int pSize = attr.get("sz", 1450).asInt();
+                double flowInt = attr.get("i", 0.001).asDouble();
 
-                // FORCE l'affichage pour vérifier dans ta console
-                std::cout << std::fixed << std::setprecision(6); 
-                std::cout << "[DEBUG] Interval recu: " << flowInt << " s" << std::endl;
+                double thrTheoNs3 = (pSize * 8.0) / flowInt;
 
-                g_handler.UpdateFlowParameters(tid, 
-                                            attr["src"].asString(), 
-                                            attr["dst"].asString(), 
-                                            pSize, 
-                                            flowInt);
-                    }
-        }   
+                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, thrTheoNs3);
+            }
+        }
     }
 }
 };
-
-
-
 
 
 class SnapshotManager {
@@ -472,10 +512,10 @@ public:
             // m_file << "\"app\": \"" << (isDl ? "DL_Traffic" : "UL_Traffic") << "\", ";
             m_file << "\"packet_size\": " << flow.packetSize << ", ";
             m_file << "\"interval\": " << flow.interval << ", ";
-            m_file << "\"throughput\": " << (isDl ? stats.macThroughputDl : stats.macThroughputUl) << ", ";
-            m_file << "\"delay\": " << (isDl ? stats.macDelayDl : stats.macDelayUl) << ", ";
-            m_file << "\"bler\": " << (isDl ? stats.blerDl : stats.blerUl) << ", ";
-            m_file << "\"packet_loss\": " << (isDl ? stats.packetLossDl : stats.packetLossUl);
+            m_file << "\"throughput\": " << flow.thr;
+            // m_file << "\"delay\": " << (isDl ? stats.macDelayDl : stats.macDelayUl) << ", ";
+            // m_file << "\"bler\": " << (isDl ? stats.blerDl : stats.blerUl) << ", ";
+            // m_file << "\"packet_loss\": " << (isDl ? stats.packetLossDl : stats.packetLossUl);
             m_file << " }";
             firstFlow = false;
         }
@@ -485,7 +525,7 @@ public:
         m_file << "  }\n]"; // 
         m_file.flush();
 
-        Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, this);
+        Simulator::Schedule(Seconds(0.01), &SnapshotManager::DoSnapshot, this);
 
     }
 
@@ -505,7 +545,7 @@ SnapshotManager g_snapshotMgr;
 void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueList, std::vector<std::string>& gnbList) {
     std::ifstream ifs(filePath);
     if (!ifs.is_open()) {
-        std::cout << "\033[1;31m[PRE-PARSE] ERROR: Could not open " << filePath << "\033[0m" << std::endl;
+        // std::cout << "\033[1;31m[PRE-PARSE] ERROR: Could not open " << filePath << "\033[0m" << std::endl;
         return;
     }
 
@@ -518,7 +558,7 @@ void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueL
 
     if (Json::parseFromStream(builder, ifs, &root, &errors)) {
         if (root.isArray()) {
-            std::cout << "\033[1;34m[PRE-PARSE] Starting Strict JSON scan...\033[0m" << std::endl;
+            // std::cout << "\033[1;34m[PRE-PARSE] Starting Strict JSON scan...\033[0m" << std::endl;
             
             for (const auto& item : root) {
                 if (!item.isMember("thingId")) continue;
@@ -535,7 +575,7 @@ void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueL
                     if (tid.length() > 14 && std::isdigit(tid[14])) {
                         if (uniqueUes.find(tid) == uniqueUes.end()) {
                             uniqueUes.insert(tid);
-                            std::cout << "  [NODE] Found Physical UE: " << tid << std::endl;
+                            // std::cout << "  [NODE] Found Physical UE: " << tid << std::endl;
                         }
                     }
                 } 
@@ -544,7 +584,7 @@ void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueL
                 else if (tid.find("my5GNetwork:gnb") == 0 && tid.find("_to_") == std::string::npos) {
                     if (uniqueGnbs.find(tid) == uniqueGnbs.end()) {
                         uniqueGnbs.insert(tid);
-                        std::cout << "  [NODE] Found Physical gNB: " << tid << std::endl;
+                        // std::cout << "  [NODE] Found Physical gNB: " << tid << std::endl;
                     }
                 }
                 else {
@@ -559,8 +599,8 @@ void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueL
     ueList.assign(uniqueUes.begin(), uniqueUes.end());
     gnbList.assign(uniqueGnbs.begin(), uniqueGnbs.end());
 
-    std::cout << "\033[1;32m[PRE-PARSE] SUCCESS: " << ueList.size() 
-              << " unique UE nodes and " << gnbList.size() << " gNB nodes identified.\033[0m" << std::endl;
+    // std::cout << "\033[1;32m[PRE-PARSE] SUCCESS: " << ueList.size() 
+    //           << " unique UE nodes and " << gnbList.size() << " gNB nodes identified.\033[0m" << std::endl;
 }
 
 
@@ -581,6 +621,8 @@ int main(int argc, char *argv[]) {
 
     uint32_t nUes = discoveredUes.size();
     uint32_t nGnbs = discoveredGnbs.size();
+
+    GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
     // --- 2. NODE CREATION ---
     NodeContainer tapNodes, gnbNodes, ueNodes, remoteHost;
@@ -633,16 +675,26 @@ int main(int argc, char *argv[]) {
     tapNodes.Get(1)->AddApplication(dittoApp);
     dittoApp->SetStartTime(Seconds(0.1));
 
+
+    /*
+        nouveau bloc de config
+    */
+
     Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
     Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
+
+    // nrHelper->SetGnbAntennaAttribute("AntennaType", StringValue("ns3::IsotropicAntennaModel"));
+    // nrHelper->SetUeAntennaAttribute("AntennaType", StringValue("ns3::IsotropicAntennaModel"));
     nrHelper->SetEpcHelper(epcHelper);
 
-    nrHelper->SetGnbPhyAttribute("TxPower", DoubleValue(46.0));
-
-    nrHelper->SetUePhyAttribute("TxPower", DoubleValue(23.0));
+    // nrHelper->SetSpectrumPropagationLossModelAttribute("Scenario", StringValue("UMa"));
 
 
-    nrHelper->SetUePhyAttribute("NoiseFigure", DoubleValue(7.0)); 
+    nrHelper->SetGnbPhyAttribute("TxPower", DoubleValue(20.0));
+    // nrHelper->SetUePhyAttribute("TxPower", DoubleValue(26.0));
+
+
+    nrHelper->SetUePhyAttribute("NoiseFigure", DoubleValue(5.0)); 
     nrHelper->SetGnbPhyAttribute("NoiseFigure", DoubleValue(5.0));
 
     // Beamforming
@@ -655,10 +707,13 @@ int main(int argc, char *argv[]) {
 
     // Spectre et Bande passante (3.5 GHz, 100 MHz)
     CcBwpCreator ccBwpCreator;
-    CcBwpCreator::SimpleOperationBandConf bandConf(3.5e9, 100e6, 1);
+    CcBwpCreator::SimpleOperationBandConf bandConf(3.5e9, 18e6, 1);
     OperationBandInfo band = ccBwpCreator.CreateOperationBandContiguousCc(bandConf);
     Ptr<NrChannelHelper> channelHelper = CreateObject<NrChannelHelper>();
     channelHelper->ConfigureFactories("UMa", "Default", "ThreeGpp");
+
+    channelHelper->SetAttribute("Scenario", StringValue("UMa"));
+
     channelHelper->AssignChannelsToBands({band});
 
     // Installation des couches Internet (GNB, UE, RemoteHost)
@@ -722,18 +777,6 @@ int main(int argc, char *argv[]) {
         if (!n->GetObject<MobilityModel>()) mobility.Install(n);
     }
 
-    // for (uint32_t i = 0; i < gnbDevs.GetN(); ++i) {
-    //     Ptr<NrGnbNetDevice> gnbDev = DynamicCast<NrGnbNetDevice>(gnbDevs.Get(i));
-    //     if (gnbDev) {
-    //         Ptr<NrGnbMac> gnbMac = gnbDev->GetMac(0);
-    //         if (gnbMac) {
-    //             gnbMac->TraceConnectWithoutContext("DlHarqFeedback", MakeCallback(&HarqDlSink));
-    //             gnbMac->TraceConnectWithoutContext("UlHarqFeedback", MakeCallback(&HarqUlSink));
-    //         }
-    //     }
-    // }
-
-    
 
     if (g_debugMode) {
         Simulator::Schedule(Seconds(1.0), &CheckInterfaceStatus, ueNodes.Get(0));
@@ -746,8 +789,9 @@ int main(int argc, char *argv[]) {
 
     nrHelper->EnableTraces();
     g_snapshotMgr.Open(g_outputFile);
-    Simulator::Schedule(Seconds(1.0), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
+    Simulator::Schedule(Seconds(0.01), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
 
+    std::cout << "NS3_READY_FOR_DATA" << std::endl; // Le signal magique
     NS_LOG_INFO("Simulation Starting...");
     Simulator::Stop(Seconds(600.0));
     Simulator::Run();

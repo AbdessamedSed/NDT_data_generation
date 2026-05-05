@@ -1,42 +1,3 @@
-// #ifndef __SRC_DTCONNECTOR_H_
-// #define __SRC_DTCONNECTOR_H_
-
-// #include <omnetpp.h>
-// #include <inet/mobility/contract/IMobility.h>
-// #include <fstream>
-// #include <vector>
-// #include <string> 
-
-// using namespace omnetpp;
-// using namespace inet;
-
-// namespace src {
-
-// class DTConnector : public cSimpleModule
-// {
-//   protected:
-//     cMessage *sampleTimer = nullptr;
-//     std::vector<IMobility*> mobilityModules;
-//     std::ofstream outputFile;
-
-//     double samplingInterval;
-//     std::vector<std::string> mobilityModulePaths; // 
-//     int numMobilityModules;
-
-//   protected:
-//     virtual void initialize() override;
-//     virtual void handleMessage(cMessage *msg) override;
-//     virtual void finish() override;
-// };
-
-// } // namespace src
-
-// #endif
-
-
-
-
-
 #ifndef __SRC_DTCONNECTOR_H_
 #define __SRC_DTCONNECTOR_H_
 
@@ -45,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
 #include <simu5g/stack/phy/NrPhyUe.h>
 #include <simu5g/stack/mac/NrMacUe.h>
 #include "inet/common/ModuleAccess.h"
@@ -59,11 +21,23 @@ class DTConnector : public cSimpleModule, public cListener
 {
 
   protected:
+
+  // struct GnbConfig {
+  //       std::string sched;
+  //       double qSize;
+  //       double power;
+  //   };
+  //   std::map<std::string, GnbConfig> gnbConfigs; 
+
     cMessage *sampleTimer = nullptr;
     std::vector<IMobility*> mobilityModules;
     std::vector<omnetpp::cModule*> phyModules;
     std::ofstream outputFile;
     std::vector<std::string> hostNames;
+
+    std::string currentSched;    // Ex: "PF", "MAXCI", "DRR"
+    double currentQSize;         // Ex: 2097152 (2MiB en octets)
+    double currentTxPower;       // Ex: 0.1
 
 
 
@@ -113,7 +87,7 @@ class DTConnector : public cSimpleModule, public cListener
     std::vector<double> lastMacDelayUl;
 
 
-    simsignal_t blerDlSignal;
+    // simsignal_t blerDlSignal;
     simsignal_t packetLossDlSignal;
     simsignal_t bufferOverflowDlSignal;
 
@@ -121,12 +95,72 @@ class DTConnector : public cSimpleModule, public cListener
     simsignal_t packetLossUlSignal;
     simsignal_t bufferOverflowUlSignal;
 
+    simsignal_t rlcDelayDl;
+    simsignal_t rlcDelayUl;
+
+    simsignal_t receivedPacketFromUpperLayerSignal;
+    simsignal_t receivedPacketFromLowerLayerSignal;
+    simsignal_t sentPacketToLowerLayerSignal;
+    simsignal_t sentPacketToUpperLayerSignal;
+
+    simsignal_t macBufferOverFlowDlSignal;
+    simsignal_t macBufferOverFlowUlSignal;
+    simsignal_t harqErrorRateDlSignal;
+    simsignal_t harqErrorRateUlSignal;
+    simsignal_t harqTxAttemptsDlSignal;
+    simsignal_t harqTxAttemptsUlSignal;
+    simsignal_t avgServedBlocksDlSignal;
+    simsignal_t avgServedBlocksUlSignal;
+    simsignal_t cqiDlSignal;
+    simsignal_t cqiUlSignal;    
+    simsignal_t endToEndDelaySignal;
+
+    simsignal_t rlcThroughputDlSignal;
+    simsignal_t rlcThroughputUlSignal;
+    simsignal_t rlcPacketLossDlSignal;
+    simsignal_t rlcPacketLossUlSignal;
+    simsignal_t rlcCellPacketLossDlSignal;
+    simsignal_t rlcCellPacketLossUlSignal;
+    simsignal_t rlcCellThroughputDlSignal;
+    simsignal_t rlcCellThroughputUlSignal;
+
+    std::vector<double> lastRlcThroughputDl;
+    std::vector<double> lastRlcThroughputUl;
+    std::vector<double> lastRlcPacketLossDl;
+    std::vector<double> lastRlcPacketLossUl;
+    std::vector<double> lastRlcCellPacketLossDl;
+    std::vector<double> lastRlcCellPacketLossUl;
+    std::vector<double> lastRlcCellThroughputDl;
+    std::vector<double> lastRlcCellThroughputUl;
+
+    std::vector<double> lastRlcDelayDl;
+    std::vector<double> lastRlcDelayUl;
+
+    std::vector<double> lastReceivedPacketFromUpperLayer;
+    std::vector<double> lastReceivedPacketFromLowerLayer; 
+    std::vector<double> lastSentPacketToLowerLayer;
+    std::vector<double> lastSentPacketToUpperLayer;
+
+
     std::vector<double> lastBlerDl;
     std::vector<double> lastBlerUl;
     std::vector<double> lastPacketLossDl;
     std::vector<double> lastPacketLossUl;
     std::vector<double> lastBufferOverflowDl;
     std::vector<double> lastBufferOverflowUl;
+
+    std::vector<double> lastMacBufferOverFlowDl;
+    std::vector<double> lastMacBufferOverFlowUl;
+    std::vector<double> lastHarqErrorRateDl;
+    std::vector<double> lastHarqErrorRateUl;
+    std::vector<double> lastHarqTxAttemptsDl;
+    std::vector<double> lastHarqTxAttemptsUl;
+    std::vector<double> lastAvgServedBlocksDl;
+    std::vector<double> lastAvgServedBlocksUl;
+    
+
+    std::vector<double> lastEndToEndDelay;
+
 
     struct FlowInfo {
         std::string srcName;
@@ -146,20 +180,30 @@ class DTConnector : public cSimpleModule, public cListener
         double pathLossUl;
         double bufferOverFlowDl;
         double bufferOverFlowUl;
+        double rlcDelayDl;
+        double rlcDelayUl;
+
+        /*
+         Les données en dessous correspondent à de la couche RLC
+
+        */
+        double receivedPacketFromUpperLayer;
+        double receivedPacketFromLowerLayer;
+        double sentPacketToLowerLayer;
+        double sentPacketToUpperLayer;
+
+        double macBufferOverFlowDl;
+        double macBufferOverFlowUl;
+        double harqErrorRateDl;
+        double harqErrorRateUl;
+        double harqTxAttemptsDl;
+        double harqTxAttemptsUl;
+        
+
+        double endToEndDelay;
+
 
     };
-
-    // struct EquipementInfo {
-    //   std::string cleanId;
-    //   std::inet::Coord pos;
-    //   double speed;
-    //   double sinrDl; // Le SINR tjrs concerne le dest
-    //   double sinrUl;
-    //   double sinrSide;
-    //   std::string servingGnb;
-
-
-    // };
 
 
     std::ofstream csvFile;
@@ -171,13 +215,16 @@ class DTConnector : public cSimpleModule, public cListener
     
 
   public:
+    // virtual int numInitStages() const override; 
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
 
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, double value, omnetpp::cObject *details) override;
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, long value, omnetpp::cObject *details) override;
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, uintval_t value, cObject *details) override;
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) override;
+
     
     int findNodeIndexByName(const std::string& name);
     double getSpeed(int index);

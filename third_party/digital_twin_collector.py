@@ -9,7 +9,7 @@ SENDER_IP = "198.19.10.1"
 SENDER_PORT = 9900
 CLIENT_IP = "198.19.10.2"
 OUTPUT_JSON_FILE = "dt_collected_history.json"
-INTERVAL_REQ_TIME = 0.5
+INTERVAL_REQ_TIME = 0.2
 
 def save_to_json_history(new_data, filename):
     """Appends a single JSON object into a valid JSON array file."""

@@ -4,111 +4,142 @@ import os
 import time
 import subprocess
 import sys
-from datetime import datetime
 
-# --- CONFIGURATION ---
-GLOBAL_FREQ = 10
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
-IDS_LOG_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "sent_packet_ids.txt")
-
-UDP_IP_DEST = "10.255.0.2"   # L'IP du Receiver
-UDP_IP_SRC = "10.255.0.10"   # L'IP du Sender
+# --- CONFIGURATION PAR DÉFAUT ---
+DEFAULT_FREQ = 5
+UDP_IP_DEST = "10.255.0.1"
+UDP_IP_SRC = "10.255.0.1"
 UDP_PORT = 9999
 INTERFACE = "veth-sender"
 
+# Chemins
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
+SENT_LOG_PATH = os.path.join(SCRIPT_DIR, "sent_packet_ids.txt")
+
 NETWORK_PROFILES = {
-    "1": {"delay": "1ms", "loss": "0%", "rate": "1000mbit", "desc": "Profil 1 : Idéal"},
-    "2": {"delay": "10ms 2ms", "loss": "0.1%", "rate": "100mbit", "desc": "Profil 2 : Très Bon"},
-    "3": {"delay": "40ms 10ms", "loss": "1%", "rate": "20mbit", "desc": "Profil 3 : Moyen"},
-    "4": {"delay": "80ms 35ms", "loss": "5%", "rate": "5mbit", "desc": "Profil 4 : Congestionné"},
-    "5": {"delay": "250ms 50ms", "loss": "15%", "rate": "1mbit", "desc": "Profil 5 : Fortement Dégradé"},
-    "6": {"delay": "20ms 5ms", "loss": "0%", "rate": "10mbit", "desc": "Profil 6 : Lien Limité"}
+    "1": {"desc": "Fibre (Idéal)", "delay": "1ms", "loss": "0%", "rate": "1000mbit", "corrupt": "0.1%"},
+    "2": {"desc": "5G URLLC", "delay": "5ms", "loss": "0.001%", "rate": "500mbit", "corrupt": "0.1%"},
+    "3": {"desc": "5G eMBB", "delay": "20ms", "loss": "4%", "rate": "100mbit", "corrupt": "5%"},
+    "4": {"desc": "4G LTE", "delay": "50ms", "loss": "4%", "rate": "20mbit", "corrupt": "10%"},
+    "5": {"desc": "Satellite", "delay": "150ms", "loss": "10%", "rate": "10mbit", "corrupt": "20%"},
+    "6": {"desc": "Congestion", "delay": "300ms", "loss": "15%", "rate": "2mbit", "corrupt": "30%"}
 }
 
 def apply_network_conditions(config):
-    print(f"\n[TC] Application : {config['desc']}")
-    subprocess.run(f"sudo tc qdisc del dev {INTERFACE} root 2>/dev/null || true", shell=True)
-    cmd = f"sudo tc qdisc add dev {INTERFACE} root netem delay {config['delay']} loss {config['loss']} rate {config['rate']}"
-    result = subprocess.run(cmd, shell=True)
-    if result.returncode == 0:
-        print(f"[TC] Succès sur {INTERFACE}")
-    else:
-        print("[TC] ERREUR : Échec TC.")
+    print(f"\n[TC] Application du profil : {config['desc']}")
+    subprocess.run(f"tc qdisc del dev {INTERFACE} root 2>/dev/null || true", shell=True)
+    cmd = f"tc qdisc add dev {INTERFACE} root netem delay {config['delay']} loss {config['loss']} rate {config['rate']}"
+    if config.get("corrupt") and config["corrupt"] != "0%":
+        cmd += f" corrupt {config['corrupt']}"
+    subprocess.run(cmd, shell=True)
 
 def main():
-    if os.getuid() != 0:
-        print("\nCRITICAL: Lancez avec 'sudo' pour modifier le réseau (tc).")
-        sys.exit(1)
-
-    os.makedirs(os.path.dirname(IDS_LOG_PATH), exist_ok=True)
-    with open(IDS_LOG_PATH, "w") as f:
-        f.write("SnapshotID\tTimestampMS\tSimTimeInPacket\tStatus\n")
-
-    print("\n" + "="*60)
-    for k, v in NETWORK_PROFILES.items():
-        print(f" {k}. {v['desc']}")
+    # 1. Gestion de la fréquence via Argument (ex: python3 script.py 50)
+    global_freq = DEFAULT_FREQ
+    if len(sys.argv) > 1:
+        try:
+            global_freq = int(sys.argv[1])
+        except ValueError:
+            print(f"Usage: sudo python3 {sys.argv[0]} [frequency_hz]")
     
-    choice = input("\nChoisissez un profil (1-6) : ")
+    if os.getuid() != 0:
+        print("❌ Erreur: sudo requis pour TC et l'accès à l'interface réseau."); sys.exit(1)
+
+    # Initialisation du log
+    with open(SENT_LOG_PATH, "w") as f:
+        f.write("SnapshotID\tTimestampMS\tSimTime\tStatus\n")
+
+    print(f"\n🚀 DÉMARRAGE ÉMETTEUR - Fréquence : {global_freq} Hz (Intervalle : {1000/global_freq:.2f} ms)")
+    
+    for k, v in NETWORK_PROFILES.items(): print(f" {k}. {v['desc']}")
+    choice = input("\nChoix du profil réseau : ")
     if choice in NETWORK_PROFILES:
         apply_network_conditions(NETWORK_PROFILES[choice])
-    else:
-        print("Choix invalide."); return
+    else: 
+        print("❌ Choix invalide."); return
 
-    # Configuration Socket avec Forçage d'Interface
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # On attache le socket à l'IP source et à l'interface physique virtuelle
-        sock.bind((UDP_IP_SRC, 0)) 
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, INTERFACE.encode())
-    except Exception as e:
-        print(f"Erreur bind interface: {e}")
+    sock.bind((UDP_IP_SRC, 0))
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, INTERFACE.encode())
 
+    last_sent_t = -1.0
     snapshot_id = 0
-    print(f"\n[*] TX via {INTERFACE} ({UDP_IP_SRC}) -> {UDP_IP_DEST}:{UDP_PORT}")
+    interval = 1.0 / global_freq
+
+    print(f"[*] Envoi vers {UDP_IP_DEST}:{UDP_PORT}. Ctrl+C pour quitter.")
 
     try:
         while True:
-            start_time = time.time()
-            try:
-                if os.path.exists(JSON_PATH):
+            start_loop = time.time()
+            
+            if os.path.exists(JSON_PATH):
+                try:
                     with open(JSON_PATH, "r") as f:
-                        content = f.read().strip()
-                        if content:
-                            if not content.endswith("]"): content += "]"
-                            data = json.loads(content)
-                            if data:
-                                last_snapshot = data[-1]
-                                sim_time_val = last_snapshot.get("timestamp", 0)
-                                snapshot_id += 1
-                                
-                                packet = {
-                                    "snapshot_id": snapshot_id,
-                                    "sim_time": sim_time_val,
-                                    "nodes": last_snapshot.get("nodes", []),
-                                    "flows": last_snapshot.get("flows", [])
-                                }
-                                
-                                message = json.dumps(packet).encode()
-                                sock.sendto(message, (UDP_IP_DEST, UDP_PORT))
-                                
-                                ts_ms = int(time.time() * 1000)
-                                with open(IDS_LOG_PATH, "a") as log_f:
-                                    log_f.write(f"{snapshot_id}\t{ts_ms}\t{sim_time_val}\tSENT\n")
-                                
-                                print(f" [TX] #{snapshot_id} | SimTime: {sim_time_val}s | Latence active: {NETWORK_PROFILES[choice]['delay']}")
-            except Exception:
-                pass
+                        data = json.load(f)
+                        last_state = data[-1] if isinstance(data, list) else data
+                        
+                        current_t = float(last_state.get("timestamp", 0))
 
-            elapsed = time.time() - start_time
-            sleep_time = (1.0 / GLOBAL_FREQ) - elapsed
+                        # On n'envoie que si c'est un nouveau temps de simulation
+                        if current_t > last_sent_t:
+                            # Construction du JSON "LITE" (Clés n, f, s, d, sz, i)
+                            nodes_lite = []
+                            for n in last_state.get("nodes", []):
+                                nodes_lite.append({
+                                    "id": n["id"],
+                                    "x": n["x"],
+                                    "y": n["y"],
+                                    "z": n.get("z", 1.5),
+                                    "sinr_dl": n.get("sinr_dl", 0),  # 
+                                    "sinr_ul": n.get("sinr_ul", 0),  #
+                                    # "speed": n.get("speed", 0)
+                                })
+
+                            flows_lite = []
+                            for f in last_state.get("flows", []):
+                                flows_lite.append({
+                                    "s": f["src"],
+                                    "d": f["dst"],
+                                    "thr": f.get("throughput", 0),
+                                    "sz": f.get("packet_size", 1450),
+                                    "i": f.get("interval", 0.001)
+                                })
+
+                            packet = {
+                                "t": current_t,
+                                "n": nodes_lite,
+                                "f": flows_lite
+                            }
+                            
+                            # Envoi UDP
+                            sock.sendto(json.dumps(packet).encode(), (UDP_IP_DEST, UDP_PORT))
+                            
+                            # Log local pour analyse de synchro
+                            snapshot_id += 1
+                            ts_ms = int(time.time() * 1000)
+                            with open(SENT_LOG_PATH, "a") as f:
+                                f.write(f"{snapshot_id}\t{ts_ms}\t{current_t}\tSENT\n")
+                            
+                            last_sent_t = current_t
+                            # Affichage discret toutes les 10 envois
+                            if snapshot_id % 10 == 0:
+                                print(f" [TX] ID:{snapshot_id} | t={current_t} envoyé.")
+
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    # Fichier en cours d'écriture ou vide, on ignore et on re-essaie
+                    pass 
+
+            # RÉGLAGE DE LA FRÉQUENCE : Calcul précis du sommeil
+            elapsed = time.time() - start_loop
+            sleep_time = interval - elapsed
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
     except KeyboardInterrupt:
-        print("\n[!] Arrêt.")
+        print("\n🛑 Arrêt Émetteur.")
     finally:
-        print("[*] Script terminé.")
+        sock.close()
 
 if __name__ == "__main__":
     main()

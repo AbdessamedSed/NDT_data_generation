@@ -60,6 +60,7 @@ struct FlowInfo {
     double interval;
     Ptr<Node> srcNode;
     Ptr<Node> dstNode;
+    double thr;
 };
 
 extern double g_snapshotInterval;

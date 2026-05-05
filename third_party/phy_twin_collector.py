@@ -8,8 +8,8 @@ from datetime import datetime
 TARGET_IP = "198.19.20.1"
 TARGET_PORT = 8000
 BIND_IP = "198.19.20.2"
-OUTPUT_HISTORY_FILE = "physical_twin_history.json"
-INTERVAL = 0.5
+OUTPUT_HISTORY_FILE = "pt_twin_history.json"
+INTERVAL = 0.2
 
 def save_to_json_history(new_data, filename):
     """Appends data while maintaining a valid JSON array format"""
