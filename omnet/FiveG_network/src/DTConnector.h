@@ -109,8 +109,29 @@ class DTConnector : public cSimpleModule, public cListener
     simsignal_t harqErrorRateUlSignal;
     simsignal_t harqTxAttemptsDlSignal;
     simsignal_t harqTxAttemptsUlSignal;
-    // simsignal_t avgServedBlocksDlSignal;
-    // simsignal_t avgServedBlocksUlSignal;
+    simsignal_t avgServedBlocksDlSignal;
+    simsignal_t avgServedBlocksUlSignal;
+    simsignal_t cqiDlSignal;
+    simsignal_t cqiUlSignal;    
+    simsignal_t endToEndDelaySignal;
+
+    simsignal_t rlcThroughputDlSignal;
+    simsignal_t rlcThroughputUlSignal;
+    simsignal_t rlcPacketLossDlSignal;
+    simsignal_t rlcPacketLossUlSignal;
+    simsignal_t rlcCellPacketLossDlSignal;
+    simsignal_t rlcCellPacketLossUlSignal;
+    simsignal_t rlcCellThroughputDlSignal;
+    simsignal_t rlcCellThroughputUlSignal;
+
+    std::vector<double> lastRlcThroughputDl;
+    std::vector<double> lastRlcThroughputUl;
+    std::vector<double> lastRlcPacketLossDl;
+    std::vector<double> lastRlcPacketLossUl;
+    std::vector<double> lastRlcCellPacketLossDl;
+    std::vector<double> lastRlcCellPacketLossUl;
+    std::vector<double> lastRlcCellThroughputDl;
+    std::vector<double> lastRlcCellThroughputUl;
 
     std::vector<double> lastRlcDelayDl;
     std::vector<double> lastRlcDelayUl;
@@ -134,9 +155,11 @@ class DTConnector : public cSimpleModule, public cListener
     std::vector<double> lastHarqErrorRateUl;
     std::vector<double> lastHarqTxAttemptsDl;
     std::vector<double> lastHarqTxAttemptsUl;
-    // std::vector<double> lastAvgServedBlocksDl;
-    // std::vector<double> lastAvgServedBlocksUl;
+    std::vector<double> lastAvgServedBlocksDl;
+    std::vector<double> lastAvgServedBlocksUl;
+    
 
+    std::vector<double> lastEndToEndDelay;
 
 
     struct FlowInfo {
@@ -175,8 +198,9 @@ class DTConnector : public cSimpleModule, public cListener
         double harqErrorRateUl;
         double harqTxAttemptsDl;
         double harqTxAttemptsUl;
-        // double avgServedBlocksDl;
-        // double avgServedBlocksUl;
+        
+
+        double endToEndDelay;
 
 
     };
@@ -200,6 +224,7 @@ class DTConnector : public cSimpleModule, public cListener
     virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, long value, omnetpp::cObject *details) override;
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, uintval_t value, cObject *details) override;
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) override;
+
     
     int findNodeIndexByName(const std::string& name);
     double getSpeed(int index);

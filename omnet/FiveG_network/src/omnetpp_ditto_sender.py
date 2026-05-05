@@ -5,16 +5,14 @@ import time
 import subprocess
 import sys
 
-# to run this: sudo ip netns exec ns-omnet python3 omnetpp_ditto_sender.py
-
-
-# --- CONFIGURATION ---
-GLOBAL_FREQ = 10 # Hz (À faire varier pour tes tests RL)
-UDP_IP_DEST = "10.255.0.1"   # IP du PC (Hôte)
-UDP_IP_SRC = "10.255.0.10"   # IP dans le Namespace
+# --- CONFIGURATION PAR DÉFAUT ---
+DEFAULT_FREQ = 5
+UDP_IP_DEST = "10.255.0.1"
+UDP_IP_SRC = "10.255.0.1"
 UDP_PORT = 9999
 INTERFACE = "veth-sender"
 
+# Chemins
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_PATH = os.path.join(SCRIPT_DIR, "..", "simulations", "network_state.json")
 SENT_LOG_PATH = os.path.join(SCRIPT_DIR, "sent_packet_ids.txt")
@@ -29,71 +27,119 @@ NETWORK_PROFILES = {
 }
 
 def apply_network_conditions(config):
-    print(f"\n[TC] Configuration : {config['desc']}")
+    print(f"\n[TC] Application du profil : {config['desc']}")
     subprocess.run(f"tc qdisc del dev {INTERFACE} root 2>/dev/null || true", shell=True)
     cmd = f"tc qdisc add dev {INTERFACE} root netem delay {config['delay']} loss {config['loss']} rate {config['rate']}"
     if config.get("corrupt") and config["corrupt"] != "0%":
         cmd += f" corrupt {config['corrupt']}"
     subprocess.run(cmd, shell=True)
-    print(f"[TC] Commande appliquée : {cmd}")
 
 def main():
+    # 1. Gestion de la fréquence via Argument (ex: python3 script.py 50)
+    global_freq = DEFAULT_FREQ
+    if len(sys.argv) > 1:
+        try:
+            global_freq = int(sys.argv[1])
+        except ValueError:
+            print(f"Usage: sudo python3 {sys.argv[0]} [frequency_hz]")
+    
     if os.getuid() != 0:
-        print("Erreur: Doit être lancé avec sudo (via ip netns exec)"); sys.exit(1)
+        print("❌ Erreur: sudo requis pour TC et l'accès à l'interface réseau."); sys.exit(1)
 
-    # Init Log
+    # Initialisation du log
     with open(SENT_LOG_PATH, "w") as f:
         f.write("SnapshotID\tTimestampMS\tSimTime\tStatus\n")
 
-    print("\n" + "="*40)
+    print(f"\n🚀 DÉMARRAGE ÉMETTEUR - Fréquence : {global_freq} Hz (Intervalle : {1000/global_freq:.2f} ms)")
+    
     for k, v in NETWORK_PROFILES.items(): print(f" {k}. {v['desc']}")
-    choice = input("\nChoix du profil : ")
+    choice = input("\nChoix du profil réseau : ")
     if choice in NETWORK_PROFILES:
         apply_network_conditions(NETWORK_PROFILES[choice])
-    else: print("Choix invalide"); return
+    else: 
+        print("❌ Choix invalide."); return
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP_SRC, 0))
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, INTERFACE.encode())
 
+    last_sent_t = -1.0
     snapshot_id = 0
-    print(f"[*] Envoi via {INTERFACE} vers {UDP_IP_DEST}...")
+    interval = 1.0 / global_freq
+
+    print(f"[*] Envoi vers {UDP_IP_DEST}:{UDP_PORT}. Ctrl+C pour quitter.")
 
     try:
         while True:
-            start_time = time.time()
+            start_loop = time.time()
+            
             if os.path.exists(JSON_PATH):
                 try:
                     with open(JSON_PATH, "r") as f:
                         data = json.load(f)
-                        # On prend le dernier état du tableau
                         last_state = data[-1] if isinstance(data, list) else data
                         
-                        snapshot_id += 1
-                        packet = {
-                            "snapshot_id": snapshot_id,
-                            "sim_time": last_state.get("timestamp", 0),
-                            "nodes": last_state.get("nodes", []),
-                            "flows": last_state.get("flows", [])
-                        }
-                        
-                        msg = json.dumps(packet).encode()
-                        sock.sendto(msg, (UDP_IP_DEST, UDP_PORT))
-                        
-                        # Logging
-                        ts_ms = int(time.time() * 1000)
-                        with open(SENT_LOG_PATH, "a") as log_f:
-                            log_f.write(f"{snapshot_id}\t{ts_ms}\t{packet['sim_time']}\tSENT\n")
-                        
-                        print(f" [TX] #{snapshot_id} envoyé (SimTime: {packet['sim_time']}s)")
-                except Exception as e:
-                    print(f"Erreur lecture/envoi: {e}")
+                        current_t = float(last_state.get("timestamp", 0))
 
-            elapsed = time.time() - start_time
-            sleep_time = (1.0 / GLOBAL_FREQ) - elapsed
-            if sleep_time > 0: time.sleep(sleep_time)
+                        # On n'envoie que si c'est un nouveau temps de simulation
+                        if current_t > last_sent_t:
+                            # Construction du JSON "LITE" (Clés n, f, s, d, sz, i)
+                            nodes_lite = []
+                            for n in last_state.get("nodes", []):
+                                nodes_lite.append({
+                                    "id": n["id"],
+                                    "x": n["x"],
+                                    "y": n["y"],
+                                    "z": n.get("z", 1.5),
+                                    "sinr_dl": n.get("sinr_dl", 0),  # 
+                                    "sinr_ul": n.get("sinr_ul", 0),  #
+                                    # "speed": n.get("speed", 0)
+                                })
+
+                            flows_lite = []
+                            for f in last_state.get("flows", []):
+                                flows_lite.append({
+                                    "s": f["src"],
+                                    "d": f["dst"],
+                                    "thr": f.get("throughput", 0),
+                                    "sz": f.get("packet_size", 1450),
+                                    "i": f.get("interval", 0.001)
+                                })
+
+                            packet = {
+                                "t": current_t,
+                                "n": nodes_lite,
+                                "f": flows_lite
+                            }
+                            
+                            # Envoi UDP
+                            sock.sendto(json.dumps(packet).encode(), (UDP_IP_DEST, UDP_PORT))
+                            
+                            # Log local pour analyse de synchro
+                            snapshot_id += 1
+                            ts_ms = int(time.time() * 1000)
+                            with open(SENT_LOG_PATH, "a") as f:
+                                f.write(f"{snapshot_id}\t{ts_ms}\t{current_t}\tSENT\n")
+                            
+                            last_sent_t = current_t
+                            # Affichage discret toutes les 10 envois
+                            if snapshot_id % 10 == 0:
+                                print(f" [TX] ID:{snapshot_id} | t={current_t} envoyé.")
+
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    # Fichier en cours d'écriture ou vide, on ignore et on re-essaie
+                    pass 
+
+            # RÉGLAGE DE LA FRÉQUENCE : Calcul précis du sommeil
+            elapsed = time.time() - start_loop
+            sleep_time = interval - elapsed
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
     except KeyboardInterrupt:
-        print("\nArrêt Sender.")
+        print("\n🛑 Arrêt Émetteur.")
+    finally:
+        sock.close()
 
 if __name__ == "__main__":
     main()

@@ -13,6 +13,8 @@
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
+#include "inet/applications/udpapp/UdpSink.h"
+#include "simu5g/stack/rlc/am/LteRlcAm.h"
 #include <iostream>
 #include <sstream>
 #include <cmath> 
@@ -32,42 +34,6 @@ Define_Module(DTConnector);
 void DTConnector::initialize()
 {
 
-
-    // if (stage == 2) {
-    //     cModule* network = getParentModule();
-    //     // Vérifie si le paramètre existe
-    //     if (!network->hasPar("numGnb")) return;
-        
-    //     int numGnb = network->par("numGnb").intValue();
-
-    //     for (int i = 0; i < numGnb; ++i) {
-    //         cModule* gnbModule = network->getSubmodule("gnb", i);
-    //         if (gnbModule) {
-    //             std::string gnbName = "gnb[" + std::to_string(i) + "]";
-    //             GnbConfig config;
-
-    //             // Accès sécurisé par chaînage de sous-modules
-    //             cModule* nic = gnbModule->getSubmodule("nic");
-    //             if (nic) {
-    //                 cModule* mac = nic->getSubmodule("mac");
-    //                 cModule* rlc = nic->getSubmodule("rlc")->getSubmodule("um");
-    //                 cModule* phy = nic->getSubmodule("phy")->getSubmodule("transmitter");
-
-    //                 config.sched = (mac && mac->hasPar("schedulingDisciplineDl")) ? 
-    //                                mac->par("schedulingDisciplineDl").stdstringValue() : "PF";
-                    
-    //                 config.qSize = (rlc && rlc->hasPar("queueSize")) ? 
-    //                                rlc->par("queueSize").doubleValue() : 2097152;
-                    
-    //                 config.power = (phy && phy->hasPar("power")) ? 
-    //                                phy->par("power").doubleValue() : 0.1;
-    //             }
-
-    //             gnbConfigs[gnbName] = config;
-    //             EV << "DTConnector: " << gnbName << " chargé avec Sched=" << config.sched << endl;
-    //         }
-    //     }
-    // }
 
     // 1. Enregistrement Signaux
     sinrDlSignal = registerSignal("rcvdSinrDl");
@@ -103,9 +69,21 @@ void DTConnector::initialize()
     harqErrorRateUlSignal = registerSignal("harqErrorRateUl");
     harqTxAttemptsDlSignal = registerSignal("harqTxAttemptsDl");
     harqTxAttemptsUlSignal = registerSignal("harqTxAttemptsUl");
-    // avgServedBlocksDlSignal = registerSignal("avgServedBlocksDl");
-    // avgServedBlocksUlSignal = registerSignal("avgServedBlocksUl");
+    avgServedBlocksDlSignal = registerSignal("avgServedBlocksDl");
+    avgServedBlocksUlSignal = registerSignal("avgServedBlocksUl");
+   
 
+    endToEndDelaySignal = registerSignal("endToEndDelay");
+
+    rlcThroughputDlSignal = registerSignal("rlcThroughputDl");
+    rlcThroughputUlSignal = registerSignal("rlcThroughputUl");
+    rlcPacketLossDlSignal = registerSignal("rlcPacketLossDl");
+    rlcPacketLossUlSignal = registerSignal("rlcPacketLossUl");
+
+    rlcCellPacketLossDlSignal = registerSignal("rlcCellPacketLossDl");
+    rlcCellPacketLossUlSignal = registerSignal("rlcCellPacketLossUl");
+    rlcCellThroughputDlSignal = registerSignal("rlcCellThroughputDl");
+    rlcCellThroughputUlSignal = registerSignal("rlcCellThroughputUl");
 
 
     // 2. Init Paramètres
@@ -150,10 +128,20 @@ void DTConnector::initialize()
     lastHarqErrorRateUl.assign(n , 0.0);
     lastHarqTxAttemptsDl.assign(n , 0.0);
     lastHarqTxAttemptsUl.assign(n , 0.0);
-    // lastAvgServedBlocksDl.assign(n , 0.0);
-    // lastAvgServedBlocksUl.assign(n , 0.0);
+    lastAvgServedBlocksDl.assign(n , 0.0);
+    lastAvgServedBlocksUl.assign(n , 0.0);
 
-   
+
+    lastRlcThroughputDl.assign(n , 0.0);
+    lastRlcThroughputUl.assign(n , 0.0);
+    lastRlcPacketLossDl.assign(n , 0.0);
+    lastRlcPacketLossUl.assign(n , 0.0);
+    lastRlcCellPacketLossDl.assign(n , 0.0);
+    lastRlcCellPacketLossUl.assign(n , 0.0);
+    lastRlcCellThroughputDl.assign(n , 0.0);
+    lastRlcCellThroughputUl.assign(n , 0.0);
+
+    lastEndToEndDelay.assign(n , 0.0);
     
 
     hostNames.clear();
@@ -207,12 +195,19 @@ void DTConnector::initialize()
     sys->subscribe(harqErrorRateUlSignal, this);
     sys->subscribe(harqTxAttemptsDlSignal, this);
     sys->subscribe(harqTxAttemptsUlSignal, this);
-    // sys->subscribe(avgServedBlocksDlSignal, this);
-    // sys->subscribe(avgServedBlocksUlSignal, this);
+    sys->subscribe(avgServedBlocksDlSignal, this);
+    sys->subscribe(avgServedBlocksUlSignal, this);
+ 
+    sys->subscribe(endToEndDelaySignal, this);
 
-
-
-
+    sys->subscribe(rlcThroughputDlSignal, this);
+    sys->subscribe(rlcThroughputUlSignal, this);
+    sys->subscribe(rlcPacketLossDlSignal, this);
+    sys->subscribe(rlcPacketLossUlSignal, this);
+    sys->subscribe(rlcCellPacketLossDlSignal, this);
+    sys->subscribe(rlcCellPacketLossUlSignal, this);
+    sys->subscribe(rlcCellThroughputDlSignal, this);
+    sys->subscribe(rlcCellThroughputUlSignal, this);
 
     
 
@@ -312,9 +307,11 @@ void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, long v
             if (signalID == servingCellSignal) {
                 lastServingCell[i] = value;
             }
-            return;
+            
         }
     }
+
+    processIncomingSignal(source, signalID, (double)value);
 }
 
 void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details) {
@@ -323,14 +320,16 @@ void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, double
 
 void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, uintval_t value, cObject *details)
 {
-    this->receiveSignal(source, signalID, (double)value, details);
+    processIncomingSignal(source, signalID, (double)value);
 }
+
+
 
 void DTConnector::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) {
     cPacket *pkt = dynamic_cast<cPacket *>(obj);
     if (pkt == nullptr) return;
 
-    double bytes = (double)pkt->getByteLength(); // On récupère la taille en bytes
+    double bytes = (double)pkt->getByteLength(); 
 
     // On redirige vers notre fonction de traitement en passant la taille du paquet
     processIncomingSignal(source, signalID, bytes);
@@ -344,7 +343,8 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
         if (srcPath.find(hostNames[i]) != std::string::npos) {
             
             // SINR
-            if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = 10.0 * log10(value);
+            // if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = 10.0 * log10(value);
+            if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = value;
             else if (signalID == sinrUlSignal || signalID == measuredSinrUlSignal) lastSinrUl[i] = value;
             else if (signalID == rcvdSinrD2DSignal) lastSinrD2D[i] = 10.0 * log10(value);
 
@@ -376,9 +376,23 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
             
             else if (signalID == harqTxAttemptsDlSignal) lastHarqTxAttemptsDl[i] = value;
             else if (signalID == harqTxAttemptsUlSignal) lastHarqTxAttemptsUl[i] = value;
+
             
-            // else if (signalID == avgServedBlocksDlSignal) lastAvgServedBlocksDl[i] = value;
-            // else if (signalID == avgServedBlocksUlSignal) lastAvgServedBlocksUl[i] = value;
+
+            else if (signalID == endToEndDelaySignal) lastEndToEndDelay[i] = value;
+
+            else if (signalID == rlcThroughputDlSignal) lastRlcThroughputDl[i] = value;
+            else if (signalID == rlcThroughputUlSignal) lastRlcThroughputUl[i] = value;
+            else if (signalID == rlcPacketLossDlSignal) lastRlcPacketLossDl[i] = value;
+            else if (signalID == rlcPacketLossUlSignal) lastRlcPacketLossUl[i] = value;
+            else if (signalID == rlcCellPacketLossDlSignal) lastRlcCellPacketLossDl[i] = value;
+            else if (signalID == rlcCellPacketLossUlSignal) lastRlcCellPacketLossUl[i] = value;
+            else if (signalID == rlcCellThroughputDlSignal) lastRlcCellThroughputDl[i] = value;
+            else if (signalID == rlcCellThroughputUlSignal) lastRlcCellThroughputUl[i] = value;
+
+            
+            else if (signalID == avgServedBlocksDlSignal) lastAvgServedBlocksDl[i] = value;
+            else if (signalID == avgServedBlocksUlSignal) lastAvgServedBlocksUl[i] = value;
             
             return;
         }
@@ -445,31 +459,30 @@ void DTConnector::exportData()
 
         std::string servingGnb = (rawName.find("ue") != std::string::npos) ? getServingGnbId(rawName) : "none";
 
-        // double qSize = 0;
-        // if (!gnbConfigs.empty()) {
-        //     // On prend la qSize du premier gNB comme référence globale si on veut simplifier
-        //     qSize = gnbConfigs.begin()->second.qSize; 
-        // }
+        jsonFile << "      { \"id\": \"" << cleanId << "\", ";
 
-        jsonFile << "      { \"id\": \"" << cleanId << "\", "
-                 << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z << ", "
-                 << "\"speed\": " << speed << ", "
+    if (hostNames[i].find("gnb") != std::string::npos) {
+        // C'EST UN GNB : On met les métriques GLOBALES
+        jsonFile << "\"type\": \"gnb\", "
+                << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z ;
+                //  << "\"cell_loss_dl\": " << lastRlcCellPacketLossDl[i] << ", "
+                //  << "\"cell_loss_ul\": " << lastRlcCellPacketLossUl[i] << ", "
+                //  << "\"cell_thr_dl\": " << lastRlcCellThroughputDl[i] << ", "
+                //  << "\"cell_thr_ul\": " << lastRlcCellThroughputUl[i] << ", "
+                //  << "\"avg_avg_served_block_dl\" : " << lastAvgServedBlocksDl[i] << ", "
+                //  << "\"avg_avg_served_block_ul\" : " << lastAvgServedBlocksUl[i];
+
+    } else {
+        // C'EST UN UE : On met les métriques PHYSIQUES
+        jsonFile << "\"type\": \"ue\", "
                  << "\"serving_gnb\": \"" << servingGnb << "\", "
+                 << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", "
+                 << "\"speed\": " << speed << ", "
                  << "\"sinr_dl\": " << lastSinrDl[i] << ", "
                  << "\"sinr_ul\": " << lastSinrUl[i];
-                //  << "\"queue_capacity\": " << qSize;
-                //  << "\"sinr_d2d\": " << lastSinrD2D[i]
-
-        // if (rawName.find("gnb") != std::string::npos) {
-        // // Si c'est un gNB, on va chercher ses infos dans la map
-        // if (gnbConfigs.count(rawName)) {
-        //     GnbConfig conf = gnbConfigs[rawName];
-        //     jsonFile << ", \"scheduling_policy\": \"" << conf.sched << "\", "
-        //             << "\"tx_power\": " << conf.power;
-        //     }
-        // }
-
-        jsonFile << " }";
+                
+    }
+    jsonFile << " }";
 
 
     }
@@ -555,7 +568,8 @@ void DTConnector::exportData()
         
         double  thr = 0, delay = 0, bler = 0, loss = 0 , rlcDelay = 0 , rcvUpper = 0 , 
                 rcvLower = 0 , sentLower = 0 , sentUpper = 0, buffOverflow = 0, avgBlocks = 0,
-                harqErr = 0, harqTx = 0;
+                harqErr = 0, harqTx = 0 , endToEndDelay = 0 , 
+                rlcThr = 0  , rlcLoss = 0;
 
         // Application de la philosophie : UL (émetteur) vs DL/D2D (récepteur)
         if (activeFlows[k].type == "UL") {
@@ -568,7 +582,10 @@ void DTConnector::exportData()
             // avgBlocks = lastAvgServedBlocksUl[ueIdx];
             harqErr = lastHarqErrorRateUl[ueIdx];
             harqTx = lastHarqTxAttemptsUl[ueIdx];
-        } else { 
+            rlcThr = lastRlcThroughputUl[ueIdx];
+            rlcLoss = lastRlcPacketLossUl[ueIdx];
+            endToEndDelay = lastEndToEndDelay[ueIdx];
+        } else {
             thr = lastMacThrDl[ueIdx];
             delay = lastMacDelayDl[ueIdx];
             bler = lastBlerDl[ueIdx];
@@ -578,12 +595,19 @@ void DTConnector::exportData()
             // avgBlocks = lastAvgServedBlocksDl[ueIdx];
             harqErr = lastHarqErrorRateDl[ueIdx];
             harqTx = lastHarqTxAttemptsDl[ueIdx];
+            rlcThr = lastRlcThroughputDl[ueIdx];
+            rlcLoss = lastRlcPacketLossDl[ueIdx];
+            endToEndDelay = lastEndToEndDelay[ueIdx];
         }
 
         rcvUpper = lastReceivedPacketFromUpperLayer[ueIdx];
         rcvLower = lastReceivedPacketFromLowerLayer[ueIdx];
         sentLower = lastSentPacketToLowerLayer[ueIdx];
         sentUpper = lastSentPacketToUpperLayer[ueIdx];
+
+
+        double manualThr = (activeFlows[k].packetSize * 8.0) / activeFlows[k].interval;
+
 
         jsonFile << "      { "
              << "\"type\": \"" << activeFlows[k].type << "\", "
@@ -592,26 +616,29 @@ void DTConnector::exportData()
              << "\"app\": \"" << activeFlows[k].type << "\", " 
              << "\"packet_size\": " << activeFlows[k].packetSize << ", "
              << "\"interval\": " << activeFlows[k].interval << ", "
-             << "\"throughput\": " << thr << ", "
-             << "\"delay\": " << delay << ", "
-             << "\"bler\": " << bler << ", "
-             << "\"packet_loss\": " << loss << ", "
-             << "\"rlcDelay\": " << rlcDelay << ", "
-             << "\"macBufferOverflow\": " << buffOverflow << ", "
-            //  << "\"avgServedBlocks\": " << avgBlocks << ", "
-             << "\"harqErrorRate\": " << harqErr << ", "
-             << "\"harqTxAttempts\": " << harqTx << ", "
-             << "\"receivedPacketFromUpperLayer\": " << rcvUpper << ", "
-             << "\"receivedPacketFromLowerLayer\": " << rcvLower << ", "
-             << "\"sentPacketToLowerLayer\": " << sentLower << ", "
-             << "\"sentPacketToUpperLayer\": " << sentUpper
+             << "\"throughput\": " << manualThr
+            //  << "\"delay\": " << delay << ", "
+            //  << "\"bler\": " << bler << ", "
+            //  << "\"packet_loss\": " << loss << ", "
+            //  << "\"rlcDelay\": " << rlcDelay << ", "
+            //  << "\"macBufferOverflow\": " << buffOverflow << ", "
+            // //  << "\"avgServedBlocks\": " << avgBlocks << ", "
+            //  << "\"harqErrorRate\": " << harqErr << ", "
+            //  << "\"harqTxAttempts\": " << harqTx << ", "
+            //  << "\"receivedPacketFromUpperLayer\": " << rcvUpper << ", "
+            //  << "\"receivedPacketFromLowerLayer\": " << rcvLower << ", "
+            //  << "\"sentPacketToLowerLayer\": " << sentLower << ", "
+            //  << "\"sentPacketToUpperLayer\": " << sentUpper << ", "
+            //  << "\"rlcThroughput\" : " << rlcThr << ", " 
+            //  << "\"rlcPacketLoss\" : " << rlcLoss << ", "
+            //  << "\"endToEndDelay\": " << endToEndDelay
              << " }";
     }
 
     // Fermeture propre du JSON pour validité immédiate
     jsonFile << "\n    ]\n"; 
     jsonFile << "  }\n]"; 
-    jsonFile.flush(); 
+    jsonFile.flush();   
 
     // =======================================================================
     // PARTIE 5 : CSV - EXPORTATION DÉTAILLÉE
