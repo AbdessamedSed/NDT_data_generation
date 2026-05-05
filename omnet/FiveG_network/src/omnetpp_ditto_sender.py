@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 # --- CONFIGURATION PAR DÉFAUT ---
-DEFAULT_FREQ = 5
+DEFAULT_FREQ = 200
 UDP_IP_DEST = "10.255.0.1"
 UDP_IP_SRC = "10.255.0.1"
 UDP_PORT = 9999
