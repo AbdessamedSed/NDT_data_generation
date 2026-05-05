@@ -1,0 +1,812 @@
+[
+  {
+    "timestamp": 1.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 500.00, "y": 500.00, "z": 0.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 510.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 511.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 512.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 513.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+
+    ]
+  },
+  {
+    "timestamp": 1.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 500.00, "y": 500.00, "z": 0.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 510.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 511.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 512.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 513.00, "y": 510.00, "z": 0.00, "speed": 0.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+
+    ]
+  },
+  {
+    "timestamp": 1.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 1.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 1.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 2.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 2.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 2.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 2.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 2.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 3.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 3.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 3.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": -999.00 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 3.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 3.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 4.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 0.00, "delay": 0.00, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 4.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 15.54, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 20.36, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 36.22, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 29.31, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 4.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 15.54, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 20.36, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 36.22, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 29.31, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 4.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 15.54, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 20.36, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 36.22, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 29.31, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 4.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 15.54, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 20.36, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 36.22, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 29.31, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 5.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 15.54, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 20.36, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 36.22, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 29.31, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 5.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.82, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.08, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.37, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 5.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.82, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.08, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.37, "delay": 2.24, "bler": 0.00, "packet_loss": 904936448 }
+    ]
+  },
+  {
+    "timestamp": 5.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.82, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.08, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.37, "delay": 2.24, "bler": 0.00, "packet_loss": 904936448 }
+    ]
+  },
+  {
+    "timestamp": 5.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.82, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.08, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.37, "delay": 2.24, "bler": 0.00, "packet_loss": 904936448 }
+    ]
+  },
+  {
+    "timestamp": 6.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.39, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.82, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.08, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.37, "delay": 2.24, "bler": 0.00, "packet_loss": 904936448 }
+    ]
+  },
+  {
+    "timestamp": 6.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.62, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.84, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.32, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.47, "delay": 2.24, "bler": 0.00, "packet_loss": 904936448 }
+    ]
+  },
+  {
+    "timestamp": 6.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.62, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.84, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.32, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.47, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 6.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.62, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.84, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.32, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.47, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 6.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.62, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.84, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.32, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.47, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 7.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.62, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.84, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.32, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.47, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 7.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.73, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.85, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.27, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.39, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 7.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.73, "delay": 2.31, "bler": 0.00, "packet_loss": 3352169472 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.85, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.27, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.39, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 7.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.73, "delay": 2.31, "bler": 0.00, "packet_loss": 3352169472 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.85, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.27, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.39, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 7.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.73, "delay": 2.31, "bler": 0.00, "packet_loss": 3352169472 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.85, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.27, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.39, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 8.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.73, "delay": 2.31, "bler": 0.00, "packet_loss": 3352169472 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.85, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.27, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.39, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 8.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.31, "bler": 0.00, "packet_loss": 3352169472 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.79, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.25, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.42, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 8.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.79, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.25, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.42, "delay": 2.24, "bler": 0.00, "packet_loss": 2770946560 }
+    ]
+  },
+  {
+    "timestamp": 8.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.79, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.25, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.42, "delay": 2.24, "bler": 0.00, "packet_loss": 2770946560 }
+    ]
+  },
+  {
+    "timestamp": 8.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.79, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.25, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.42, "delay": 2.24, "bler": 0.00, "packet_loss": 2770946560 }
+    ]
+  },
+  {
+    "timestamp": 9.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.69, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.79, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.25, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.42, "delay": 2.24, "bler": 0.00, "packet_loss": 2770946560 }
+    ]
+  },
+  {
+    "timestamp": 9.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.67, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.17, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.44, "delay": 2.24, "bler": 0.00, "packet_loss": 2770946560 }
+    ]
+  },
+  {
+    "timestamp": 9.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.67, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.17, "delay": 2.24, "bler": 0.00, "packet_loss": 2127884800 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.44, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 9.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.67, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.17, "delay": 2.24, "bler": 0.00, "packet_loss": 2127884800 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.44, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 9.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.67, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.17, "delay": 2.24, "bler": 0.00, "packet_loss": 2127884800 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.44, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 10.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.67, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.17, "delay": 2.24, "bler": 0.00, "packet_loss": 2127884800 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.44, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 10.20,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.61, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.20, "delay": 2.24, "bler": 0.00, "packet_loss": 2127884800 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.23, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 10.40,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.61, "delay": 2.31, "bler": 0.00, "packet_loss": 835494912 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.20, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.23, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 10.60,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.61, "delay": 2.31, "bler": 0.00, "packet_loss": 835494912 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.20, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.23, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 10.80,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.61, "delay": 2.31, "bler": 0.00, "packet_loss": 835494912 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.20, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.23, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  },
+  {
+    "timestamp": 11.00,
+    "nodes": [
+      { "id": "my5GNetwork:gnb0", "x": 726.00, "y": 277.00, "z": 100.00, "speed": 0.00, "type": "gNB" },
+      { "id": "my5GNetwork:ue0", "x": 399.31, "y": 200.72, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 57.87 },
+      { "id": "my5GNetwork:ue1", "x": 364.81, "y": 236.91, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 59.36 },
+      { "id": "my5GNetwork:ue2", "x": 363.12, "y": 166.22, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 64.27 },
+      { "id": "my5GNetwork:ue3", "x": 435.50, "y": 235.23, "z": 0.00, "speed": 5.00, "serving_gnb": "gnb:1", "sinr_dl": 58.43 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "packet_size": 14500, "interval": 0.00, "throughput": 26.61, "delay": 2.31, "bler": 0.00, "packet_loss": 835494912 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "packet_size": 14500, "interval": 0.00, "throughput": 34.83, "delay": 2.31, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "packet_size": 14500, "interval": 0.00, "throughput": 62.20, "delay": 2.24, "bler": 0.00, "packet_loss": 0 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "packet_size": 14500, "interval": 0.00, "throughput": 50.23, "delay": 2.24, "bler": 0.00, "packet_loss": 0 }
+    ]
+  }
+]
