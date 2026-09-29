@@ -218,7 +218,7 @@ void DTConnector::initialize()
             << "posx_src,posy_src,posz_src,posx_dest,posy_dest,posz_dest,"
             << "traffic_type,packet_size,interval,"
             << "serving_gnb,distance,"
-            << "sinr_dl,sinr_ul"
+            << "sinr_dl,sinr_ul,"
             << "mac_thr_dl,mac_thr_ul,mac_delay_dl,mac_delay_ul,blerDlSignal,blerUlSignal,packetLossDlSignal,packetLossUlSignal,"
             // << "bufferOverflowDlSignal,bufferOverflowUlSignal"
             << "\n";
@@ -344,7 +344,7 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
             
             // SINR
             // if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = 10.0 * log10(value);
-            if (signalID == sinrDlSignal || signalID == measuredSinrDlSignal) lastSinrDl[i] = value;
+            if (signalID == sinrDlSignal) lastSinrDl[i] = value;
             else if (signalID == sinrUlSignal || signalID == measuredSinrUlSignal) lastSinrUl[i] = value;
             else if (signalID == rcvdSinrD2DSignal) lastSinrD2D[i] = 10.0 * log10(value);
 
@@ -478,8 +478,7 @@ void DTConnector::exportData()
                  << "\"serving_gnb\": \"" << servingGnb << "\", "
                  << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", "
                  << "\"speed\": " << speed << ", "
-                 << "\"sinr_dl\": " << lastSinrDl[i] << ", "
-                 << "\"sinr_ul\": " << lastSinrUl[i];
+                 << "\"sinr_dl\": " << lastSinrDl[i];
                 
     }
     jsonFile << " }";
@@ -606,7 +605,9 @@ void DTConnector::exportData()
         sentUpper = lastSentPacketToUpperLayer[ueIdx];
 
 
-        double manualThr = (activeFlows[k].packetSize * 8.0) / activeFlows[k].interval;
+        // Offered application traffic rate, not measured network throughput.
+        double offeredRateBps =
+            (activeFlows[k].packetSize * 8.0) / activeFlows[k].interval;
 
 
         jsonFile << "      { "
@@ -616,7 +617,9 @@ void DTConnector::exportData()
              << "\"app\": \"" << activeFlows[k].type << "\", " 
              << "\"packet_size\": " << activeFlows[k].packetSize << ", "
              << "\"interval\": " << activeFlows[k].interval << ", "
-             << "\"throughput\": " << manualThr
+             << "\"offered_rate_bps\": " << offeredRateBps << ", "
+             << "\"mac_throughput_Bps\": " << thr << ", "
+             << "\"rlc_throughput_Bps\": " << rlcThr
             //  << "\"delay\": " << delay << ", "
             //  << "\"bler\": " << bler << ", "
             //  << "\"packet_loss\": " << loss << ", "
