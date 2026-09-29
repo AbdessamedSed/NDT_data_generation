@@ -33,3 +33,7 @@ bin/
 # --- Editeurs ---
 .vscode/
 *~
+
+# Local framework dependencies
+omnet/inet-4.5.4
+omnet/simu5g-1.4.1
