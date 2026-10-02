@@ -1,3 +1,4 @@
+#include <chrono>
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -9,6 +10,7 @@
 #include "ns3/netanim-module.h"
 #include "ns3/applications-module.h"
 #include "json/json.h"
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -39,6 +41,13 @@
 
 
 using namespace ns3;
+
+// Latest PT simulation timestamp successfully applied in the DT.
+static double g_lastPtSourceSimTime = -1.0;
+
+// Latest PT timestamps independently applied for each synchronized domain.
+static double g_lastPtSourceSimTimeM = -1.0;
+static double g_lastPtSourceSimTimeT = -1.0;
 using namespace ns3::nr;
 
 NS_LOG_COMPONENT_DEFINE("Ditto5GControl");
@@ -143,7 +152,15 @@ void InstallControlTraffic(NodeContainer ueNodes, Ptr<Node> remoteHost, Ipv4Addr
 // ===========================================================================
 class DittoDataHandler {
 private:
-    std::map<std::string, Ptr<Application>> m_flowApps; 
+    std::map<std::string, Ptr<Application>> m_flowApps;
+
+    struct FlowConfig
+    {
+        int packetSize = 0;
+        double interval = 0.0;
+    };
+
+    std::map<std::string, FlowConfig> m_lastFlowConfig;
 
 public:
     void UpdateNodeMobility(std::string id, double x, double y, double z, double speed = 0.0) {
@@ -165,11 +182,23 @@ public:
         Ptr<MobilityModel> mobility = node->GetObject<MobilityModel>();
         if (mobility) {
             mobility->SetPosition(Vector3D(x, y, z));
-            table_radio_5g[nodeId].currentSpeed = speed; 
-            // std::cout << "\033[1;32m[MOBILITY-OK]\033[0m Node " << cleanId << " moved to (" << x << "," << y << " , " << z << ")" << std::endl;
+            table_radio_5g[nodeId].currentSpeed = speed;
+
+            std::cout
+                << "[NS3-MOBILITY] id=" << cleanId
+                << " nodeId=" << nodeId
+                << " x=" << x
+                << " y=" << y
+                << " z=" << z
+                << " speed=" << speed
+                << std::endl;
         }
     } else {
-        // std::cout << "\033[1;31m[MOBILITY-ERROR]\033[0m ID received from PT '" << id << "' (cleaned as '" << cleanId << "') is NOT in thingIdToNode map!" << std::endl;
+        std::cout
+            << "[NS3-MOBILITY-ERROR] received=" << id
+            << " mapped=" << cleanId
+            << " not found in thingIdToNode"
+            << std::endl;
     }
 }
 
@@ -182,7 +211,7 @@ public:
         return Ipv4Address::GetAny();
     }
 
-    void UpdateFlowParameters(std::string flowIdFromDitto, std::string srcStr, std::string dstStr, int pSize, double flowInt, double thr) {
+    void UpdateFlowParameters(std::string flowIdFromDitto, std::string srcStr, std::string dstStr, int pSize, double flowInt, double offeredRateBps) {
     // 1. Nettoyage et mapping des IDs Ditto vers ns-3
     auto clean = [](std::string n) {
         n.erase(std::remove(n.begin(), n.end(), '['), n.end());
@@ -198,6 +227,24 @@ public:
     
     // 2. Création d'un ID interne unique pour éviter de recréer le même flux
     std::string internalFlowId = sId + "->" + dId;
+
+    // Ignore traffic updates when the synchronized parameters
+    // have not changed.
+    auto previous = m_lastFlowConfig.find(internalFlowId);
+
+    if (
+        previous != m_lastFlowConfig.end() &&
+        previous->second.packetSize == pSize &&
+        std::abs(previous->second.interval - flowInt) < 1e-12
+    )
+    {
+        return;
+    }
+
+    m_lastFlowConfig[internalFlowId] = {
+        pSize,
+        flowInt
+    };
 
     // Vérification de l'existence des noeuds
     if (thingIdToNode.count(sId) == 0 || thingIdToNode.count(dId) == 0) {
@@ -217,7 +264,7 @@ public:
         // Mise à jour des infos pour le SnapshotManager
         active_flows[internalFlowId].packetSize = pSize;
         active_flows[internalFlowId].interval = flowInt;
-        active_flows[internalFlowId].thr = thr;
+        active_flows[internalFlowId].offeredRateBps = offeredRateBps;
         
         // std::cout << "\033[1;34m[FLOW-UPDATE]\033[0m " << internalFlowId << " | Int: " << flowInt << "s" << std::endl;
     }
@@ -260,7 +307,7 @@ public:
         info.interval = flowInt;
         info.srcNode = srcNode;
         info.dstNode = dstNode;
-        info.thr = thr;
+        info.offeredRateBps = offeredRateBps;
         active_flows[internalFlowId] = info;
     }
 }
@@ -319,6 +366,18 @@ private:
     uint16_t m_port;
     Ptr<Socket> m_socket;
     std::string m_logFileName;
+
+    struct SnapshotBuffer
+    {
+        uint32_t chunkCount = 0;
+        std::vector<std::string> chunks;
+        std::vector<bool> received;
+        double lastUpdate = 0.0;
+    };
+
+    std::map<std::string, SnapshotBuffer> m_snapshots;
+
+    static constexpr double REASSEMBLY_TIMEOUT_S = 2.0;
     // std::string m_bufferPath = "/dev/shm/ditto_buffer.json"; 
     
     DittoLogger m_logger;       
@@ -339,29 +398,217 @@ private:
     }
 
     // MODIFICATION ICI : On lit le paquet, pas le fichier
-    void HandleRead(Ptr<Socket> socket) {
-    Ptr<Packet> packet;
-    Ptr<Packet> lastPacket = nullptr; 
-    Address from;
+    void CleanupExpiredSnapshots()
+    {
+        const double now = Simulator::Now().GetSeconds();
 
-    // 1. On vide TOUTE la file d'attente UDP et on ne garde que le dernier
-    while ((packet = socket->RecvFrom(from))) {
-        lastPacket = packet; 
-    }
+        for (auto it = m_snapshots.begin(); it != m_snapshots.end(); )
+        {
+            if ((now - it->second.lastUpdate) > REASSEMBLY_TIMEOUT_S)
+            {
+                NS_LOG_WARN(
+                    "[NS3] Dropping incomplete snapshot "
+                    << it->first
+                    << " after reassembly timeout"
+                );
 
-    // 2. On ne traite QUE le dernier paquet reçu (le plus frais)
-    if (lastPacket) {
-        uint32_t dataSize = lastPacket->GetSize();
-        uint8_t* buffer = new uint8_t[dataSize];
-        lastPacket->CopyData(buffer, dataSize);
-        std::string jsonContent(reinterpret_cast<char*>(buffer), dataSize);
-        delete[] buffer;
-
-        if (!jsonContent.empty()) {
-            ProcessJson(jsonContent); 
+                it = m_snapshots.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
         }
     }
-}
+
+    void HandleRead(Ptr<Socket> socket)
+    {
+        Ptr<Packet> packet;
+        Address from;
+
+        while ((packet = socket->RecvFrom(from)))
+        {
+            const uint32_t dataSize = packet->GetSize();
+
+            std::vector<uint8_t> buffer(dataSize);
+            packet->CopyData(
+                buffer.data(),
+                dataSize
+            );
+
+            std::string message(
+                reinterpret_cast<char*>(buffer.data()),
+                dataSize
+            );
+
+            if (message.empty())
+            {
+                continue;
+            }
+
+            // Expected format:
+            // NDT1|snapshot_id|chunk_index|chunk_count|sim_time|payload
+            if (message.rfind("NDT1|", 0) != 0)
+            {
+                NS_LOG_WARN(
+                    "[NS3] Ignoring non-NDT1 control message"
+                );
+                continue;
+            }
+
+            size_t p1 = message.find('|', 5);
+            size_t p2 = (p1 == std::string::npos)
+                ? std::string::npos
+                : message.find('|', p1 + 1);
+            size_t p3 = (p2 == std::string::npos)
+                ? std::string::npos
+                : message.find('|', p2 + 1);
+            size_t p4 = (p3 == std::string::npos)
+                ? std::string::npos
+                : message.find('|', p3 + 1);
+
+            if (
+                p1 == std::string::npos ||
+                p2 == std::string::npos ||
+                p3 == std::string::npos ||
+                p4 == std::string::npos
+            )
+            {
+                NS_LOG_WARN(
+                    "[NS3] Malformed NDT1 chunk header"
+                );
+                continue;
+            }
+
+            const std::string snapshotId =
+                message.substr(5, p1 - 5);
+
+            const uint32_t chunkIndex =
+                static_cast<uint32_t>(
+                    std::stoul(
+                        message.substr(
+                            p1 + 1,
+                            p2 - p1 - 1
+                        )
+                    )
+                );
+
+            const uint32_t chunkCount =
+                static_cast<uint32_t>(
+                    std::stoul(
+                        message.substr(
+                            p2 + 1,
+                            p3 - p2 - 1
+                        )
+                    )
+                );
+
+            const std::string simTimeField =
+                message.substr(
+                    p3 + 1,
+                    p4 - p3 - 1
+                );
+
+            const std::string chunkPayload =
+                message.substr(p4 + 1);
+
+            if (
+                chunkCount == 0 ||
+                chunkIndex >= chunkCount
+            )
+            {
+                NS_LOG_WARN(
+                    "[NS3] Invalid chunk metadata for snapshot "
+                    << snapshotId
+                );
+                continue;
+            }
+
+            SnapshotBuffer& state =
+                m_snapshots[snapshotId];
+
+            if (
+                state.chunkCount == 0 ||
+                state.chunkCount != chunkCount
+            )
+            {
+                state.chunkCount = chunkCount;
+                state.chunks.assign(
+                    chunkCount,
+                    std::string()
+                );
+                state.received.assign(
+                    chunkCount,
+                    false
+                );
+            }
+
+            state.lastUpdate =
+                Simulator::Now().GetSeconds();
+
+            // Duplicate chunks are harmless.
+            if (!state.received[chunkIndex])
+            {
+                state.chunks[chunkIndex] =
+                    chunkPayload;
+
+                state.received[chunkIndex] =
+                    true;
+            }
+
+            uint32_t receivedCount = 0;
+
+            for (bool received : state.received)
+            {
+                if (received)
+                {
+                    ++receivedCount;
+                }
+            }
+
+            // Verbose chunk trace disabled for dataset generation.
+            /*
+            std::cout
+                << "[NS3-CHUNK] snapshot=" << snapshotId
+                << " chunk=" << (chunkIndex + 1)
+                << "/" << chunkCount
+                << " bytes=" << chunkPayload.size()
+                << std::endl;
+            */
+
+            if (receivedCount == chunkCount)
+            {
+                std::string fullJson;
+
+                size_t totalSize = 0;
+                for (const auto& chunk : state.chunks)
+                {
+                    totalSize += chunk.size();
+                }
+
+                fullJson.reserve(totalSize);
+
+                for (const auto& chunk : state.chunks)
+                {
+                    fullJson += chunk;
+                }
+
+                // Verbose reassembly trace disabled for dataset generation.
+                /*
+                std::cout
+                    << "[NS3-REASSEMBLY] snapshot=" << snapshotId
+                    << " complete bytes=" << fullJson.size()
+                    << std::endl;
+                */
+
+                m_snapshots.erase(snapshotId);
+
+                ProcessJson(fullJson);
+            }
+        }
+
+        CleanupExpiredSnapshots();
+    }
 
     void ProcessJson(std::string jsonStr) {
     Json::Value root;
@@ -371,15 +618,42 @@ private:
 
     if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.size(), &root, &errors)) return;
 
+    // Track independently which PT domains were refreshed by this update.
+    if (root.isObject() && root.isMember("t")) {
+        const double sourceTime = root["t"].asDouble();
+
+        const bool refreshMobility =
+            root.isMember("n") &&
+            root["n"].isArray() &&
+            !root["n"].empty();
+
+        const bool refreshTraffic =
+            root.isMember("f") &&
+            root["f"].isArray() &&
+            !root["f"].empty();
+
+        if (refreshMobility) {
+            g_lastPtSourceSimTimeM = sourceTime;
+        }
+
+        if (refreshTraffic) {
+            g_lastPtSourceSimTimeT = sourceTime;
+        }
+
+        // Retained for backward-compatible global diagnostics.
+        g_lastPtSourceSimTime = sourceTime;
+    }
+
     // --- CAS 1 : C'est un OBJET {"n": ..., "f": ...} ---
     if (root.isObject()) {
         // Sécurité : on vérifie isObject() AVANT isMember()
         if (root.isMember("n") && root["n"].isArray()) {
             for (const auto& node : root["n"]) {
-                g_handler.UpdateNodeMobility(node["id"].asString(), 
-                                            node["x"].asDouble(), 
-                                            node["y"].asDouble(), 
-                                            node["z"].asDouble(), 0.0);
+                g_handler.UpdateNodeMobility(node["id"].asString(),
+                                            node["x"].asDouble(),
+                                            node["y"].asDouble(),
+                                            node.get("z", 0.0).asDouble(),
+                                            node.get("speed", 0.0).asDouble());
             }
         }
         if (root.isMember("f") && root["f"].isArray()) {
@@ -389,12 +663,12 @@ private:
                 int pSize = flow.get("sz", 1450).asInt();
                 double flowInt = flow.get("i", 0.001).asDouble();
 
-                double thrTheoNs3 = (pSize * 8.0) / flowInt;
+                double offeredRateBps = (pSize * 8.0) / flowInt;
 
                 // std::cout << "\n Thr is : " << thrTheoNs3 << std::endl;
 
 
-                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, thrTheoNs3);
+                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, offeredRateBps);
 
                 
             }
@@ -425,9 +699,9 @@ private:
                 int pSize = attr.get("sz", 1450).asInt();
                 double flowInt = attr.get("i", 0.001).asDouble();
 
-                double thrTheoNs3 = (pSize * 8.0) / flowInt;
+                double offeredRateBps = (pSize * 8.0) / flowInt;
 
-                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, thrTheoNs3);
+                g_handler.UpdateFlowParameters("sync_flow", sId, dId, pSize, flowInt, offeredRateBps);
             }
         }
     }
@@ -463,6 +737,26 @@ public:
 
         m_file << "  {\n";
         m_file << "    \"timestamp\": " << std::fixed << std::setprecision(2) << now << ",\n";
+
+        const double snapshotWallTime =
+            std::chrono::duration<double>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+
+        m_file << "    \"wall_time\": "
+               << std::fixed << std::setprecision(6)
+               << snapshotWallTime << ",\n";
+        m_file << "    \"source_sim_time\": "
+               << std::fixed << std::setprecision(3)
+               << g_lastPtSourceSimTime << ",\n";
+
+        m_file << "    \"source_sim_time_M\": "
+               << std::fixed << std::setprecision(3)
+               << g_lastPtSourceSimTimeM << ",\n";
+
+        m_file << "    \"source_sim_time_T\": "
+               << std::fixed << std::setprecision(3)
+               << g_lastPtSourceSimTimeT << ",\n";
 
         // --- SECTION NODES (UEs et gNBs) ---
         m_file << "    \"nodes\": [\n";
@@ -511,8 +805,8 @@ public:
             m_file << "\"dst\": \"" << flow.dstName << "\", ";
             // m_file << "\"app\": \"" << (isDl ? "DL_Traffic" : "UL_Traffic") << "\", ";
             m_file << "\"packet_size\": " << flow.packetSize << ", ";
-            m_file << "\"interval\": " << flow.interval << ", ";
-            m_file << "\"throughput\": " << flow.thr;
+            m_file << "\"interval\": " << std::setprecision(9) << flow.interval << ", ";
+            m_file << "\"offered_rate_bps\": " << std::setprecision(6) << flow.offeredRateBps << ", "; m_file << "\"rlc_throughput_Bps\": " << std::setprecision(6) << stats.rlcThroughputDl;
             // m_file << "\"delay\": " << (isDl ? stats.macDelayDl : stats.macDelayUl) << ", ";
             // m_file << "\"bler\": " << (isDl ? stats.blerDl : stats.blerUl) << ", ";
             // m_file << "\"packet_loss\": " << (isDl ? stats.packetLossDl : stats.packetLossUl);
@@ -525,7 +819,7 @@ public:
         m_file << "  }\n]"; // 
         m_file.flush();
 
-        Simulator::Schedule(Seconds(0.01), &SnapshotManager::DoSnapshot, this);
+        Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, this);
 
     }
 
@@ -608,19 +902,66 @@ void PreParseInitialEntities(std::string filePath, std::vector<std::string>& ueL
 // 4. MAIN
 // ===========================================================================
 int main(int argc, char *argv[]) {
-    // --- 1. DYNAMIC DETECTION OF UEs and GNBs (Ditto/RAM Buffer) ---
+    // Simulation duration can be selected from the launcher.
+    double simTime = 1200.0;
+
+    // --- 1. EXPLICIT DIGITAL-TWIN TOPOLOGY ---
+    //
+    // Static topology is configured when ns-3 starts.
+    // Ditto remains responsible only for dynamic state synchronization.
+    uint32_t nUes = 10;
+    uint32_t nGnbs = 1;
+
+    CommandLine cmd(__FILE__);
+    cmd.AddValue(
+        "numUes",
+        "Number of UE nodes in the digital twin",
+        nUes
+    );
+    cmd.AddValue(
+        "numGnbs",
+        "Number of gNB nodes in the digital twin",
+        nGnbs
+    );
+        cmd.AddValue(
+        "simTime",
+        "Simulation duration in seconds",
+        simTime
+    );
+cmd.Parse(argc, argv);
+
     std::vector<std::string> discoveredUes;
     std::vector<std::string> discoveredGnbs;
-    
-    std::string configPath = "/dev/shm/ditto_buffer.json"; 
-    PreParseInitialEntities(configPath, discoveredUes, discoveredGnbs);
 
-    // Fallback par défaut
-    if (discoveredUes.empty()) discoveredUes.push_back("my5GNetwork:ue0");
-    if (discoveredGnbs.empty()) discoveredGnbs.push_back("my5GNetwork:gnb");
+    for (uint32_t i = 0; i < nUes; ++i)
+    {
+        discoveredUes.push_back(
+            "my5GNetwork:ue" + std::to_string(i)
+        );
+    }
 
-    uint32_t nUes = discoveredUes.size();
-    uint32_t nGnbs = discoveredGnbs.size();
+    if (nGnbs == 1)
+    {
+        // Current OMNeT/Ditto identifier.
+        discoveredGnbs.push_back(
+            "my5GNetwork:gnb0"
+        );
+    }
+    else
+    {
+        for (uint32_t i = 0; i < nGnbs; ++i)
+        {
+            discoveredGnbs.push_back(
+                "my5GNetwork:gnb" + std::to_string(i)
+            );
+        }
+    }
+
+    NS_LOG_INFO(
+        "[NS3] Topology configured: "
+        << nUes << " UE(s), "
+        << nGnbs << " gNB(s)"
+    );
 
     GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
@@ -741,11 +1082,11 @@ int main(int argc, char *argv[]) {
     // --- 8. METRICS & TRACES (Connexion finale) ---
     ConnectSimulationTraces(ueDevs, gnbDevs, ueNodes);
     
-    Simulator::Schedule(Seconds(1.1), &ComputeThroughput, nrHelper, nGnbs, nUes);
-    Simulator::Schedule(Seconds(1.2), &ComputeLatency, nrHelper, nGnbs, nUes);
-    Simulator::Schedule(Seconds(1.3), &ComputeDistance, nrHelper, gnbNodes, nGnbs, nUes);
-    Simulator::Schedule(Seconds(1.4), &ComputePacketLoss, nrHelper, nGnbs, nUes);
-    Simulator::Schedule(Seconds(1.5), &ComputeBler, nrHelper, nGnbs, nUes);
+    Simulator::Schedule(Seconds(2), &ComputeThroughput, nrHelper, ueDevs);
+    // Simulator::Schedule(Seconds(1.2), &ComputeLatency, nrHelper, nGnbs, nUes);
+    Simulator::Schedule(Seconds(3), &ComputeDistance, nrHelper, gnbNodes, nGnbs, nUes);
+    // Simulator::Schedule(Seconds(1.4), &ComputePacketLoss, nrHelper, nGnbs, nUes);
+    // Simulator::Schedule(Seconds(1.5), &ComputeBler, nrHelper, nGnbs, nUes);
 
     // --- 9. CORE NETWORK & INTERNET ROUTING ---
     Ptr<Node> pgw = epcHelper->GetPgwNode();
@@ -778,22 +1119,22 @@ int main(int argc, char *argv[]) {
     }
 
 
-    if (g_debugMode) {
-        Simulator::Schedule(Seconds(1.0), &CheckInterfaceStatus, ueNodes.Get(0));
-        Simulator::Schedule(Seconds(5.0), &CheckInterfaceStatus, ueNodes.Get(0));
-        Simulator::Schedule(Seconds(10.0), &CheckInterfaceStatus, ueNodes.Get(0));
-        Simulator::Schedule(Seconds(1.0), &CheckNeighborCache, ueNodes.Get(0));
-        Simulator::Schedule(Seconds(5.0), &CheckNeighborCache, ueNodes.Get(0));
-        Simulator::Schedule(Seconds(10.0), &CheckNeighborCache, ueNodes.Get(0));
-    }
+    // if (g_debugMode) {
+    //     Simulator::Schedule(Seconds(1.0), &CheckInterfaceStatus, ueNodes.Get(0));
+    //     Simulator::Schedule(Seconds(5.0), &CheckInterfaceStatus, ueNodes.Get(0));
+    //     Simulator::Schedule(Seconds(10.0), &CheckInterfaceStatus, ueNodes.Get(0));
+    //     Simulator::Schedule(Seconds(1.0), &CheckNeighborCache, ueNodes.Get(0));
+    //     Simulator::Schedule(Seconds(5.0), &CheckNeighborCache, ueNodes.Get(0));
+    //     Simulator::Schedule(Seconds(10.0), &CheckNeighborCache, ueNodes.Get(0));
+    // }
 
     nrHelper->EnableTraces();
     g_snapshotMgr.Open(g_outputFile);
-    Simulator::Schedule(Seconds(0.01), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
+    Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
 
     std::cout << "NS3_READY_FOR_DATA" << std::endl; // Le signal magique
     NS_LOG_INFO("Simulation Starting...");
-    Simulator::Stop(Seconds(600.0));
+    Simulator::Stop(Seconds(simTime));
     Simulator::Run();
 
     g_snapshotMgr.Close();
