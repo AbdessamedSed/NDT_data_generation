@@ -1,0 +1,83 @@
+include omnetpp.ini
+
+[Config JournalBus1h]
+extends = Statistics
+
+sim-time-limit = 1200s
+scheduler-class = "omnetpp::cRealTimeScheduler"
+
+# --------------------------------------------------------------------------
+# TOPOLOGY
+# --------------------------------------------------------------------------
+*.numUe = 10
+*.numGnb = 1
+
+*.server.numApps = 10
+*.ue[*].numApps = 1
+
+# --------------------------------------------------------------------------
+# DIGITAL-TWIN EXPORT
+# 10 Hz state generation. network_state_latest.json stays constant-size.
+# --------------------------------------------------------------------------
+*.dtConnector.numMobilityModules = 11
+*.dtConnector.samplingInterval = 0.1s
+*.dtConnector.mobilityModulePaths = "ue[0].mobility,ue[1].mobility,ue[2].mobility,ue[3].mobility,ue[4].mobility,ue[5].mobility,ue[6].mobility,ue[7].mobility,ue[8].mobility,ue[9].mobility,gnb[0].mobility"
+
+# --------------------------------------------------------------------------
+# gNB
+# --------------------------------------------------------------------------
+*.gnb[0].mobility.typename = "StationaryMobility"
+*.gnb[0].mobility.initialX = 500m
+*.gnb[0].mobility.initialY = 500m
+*.gnb[0].mobility.initialZ = 30m
+
+# --------------------------------------------------------------------------
+# UE MOBILITY
+# --------------------------------------------------------------------------
+*.ue[*].mobility.typename = "GaussMarkovMobility"
+*.ue[*].mobility.initialX = uniform(50m, 950m)
+*.ue[*].mobility.initialY = uniform(50m, 950m)
+*.ue[*].mobility.initialZ = 0m
+
+*.ue[*].mobility.speed = uniform(5mps, 25mps)
+*.ue[*].mobility.speedStdDev = 4mps
+*.ue[*].mobility.angleStdDev = 15deg
+*.ue[*].mobility.alpha = 0.75
+*.ue[*].mobility.margin = 30m
+
+**.constraintAreaMinX = 0m
+**.constraintAreaMaxX = 1000m
+**.constraintAreaMinY = 0m
+**.constraintAreaMaxY = 1000m
+
+# --------------------------------------------------------------------------
+# DOWNLINK TRAFFIC
+# One synchronized flow per UE.
+# --------------------------------------------------------------------------
+*.server.app[*].typename = "UdpBasicApp"
+*.server.app[*].destPort = 1000
+*.server.app[*].startTime = 2s
+*.server.app[*].stopTime = -1s
+
+*.server.app[*].destAddresses = "ue[" + string(ancestorIndex(0) % 10) + "]"
+
+# Group A: relatively heavy traffic
+*.server.app[0..2].messageLength = 1400B
+*.server.app[0..2].sendInterval = 0.01s
+
+# Group B: moderate traffic
+*.server.app[3..6].messageLength = 1000B
+*.server.app[3..6].sendInterval = 0.02s
+
+# Group C: smaller but frequent packets
+*.server.app[7..9].messageLength = 600B
+*.server.app[7..9].sendInterval = 0.005s
+
+*.ue[*].app[0].typename = "UdpSink"
+*.ue[*].app[0].localPort = 1000
+
+
+# Disable native OMNeT++ result files.
+# Experimental PT/DT states are stored by dedicated lightweight loggers.
+**.vector-recording = false
+**.scalar-recording = false

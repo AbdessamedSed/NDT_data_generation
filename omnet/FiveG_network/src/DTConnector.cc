@@ -1,5 +1,7 @@
 
+#include <iomanip>
 #include "DTConnector.h"
+#include <chrono>
 #include <inet/common/ModuleAccess.h>
 #include <inet/mobility/contract/IMobility.h>
 #include <simu5g/stack/phy/NrPhyUe.h>
@@ -17,7 +19,8 @@
 #include "simu5g/stack/rlc/am/LteRlcAm.h"
 #include <iostream>
 #include <sstream>
-#include <cmath> 
+#include <cmath>
+#include <cstdio> 
 
 using namespace omnetpp;
 using namespace inet;
@@ -225,14 +228,25 @@ void DTConnector::initialize()
     csvFile.flush();
 
     }
-
-    // Init JSON
-    jsonFile.open("network_state.json", std::ios::trunc);
-    if (jsonFile.is_open()) {
-        jsonFile << "[\n]"; 
-        jsonFile.flush();
+    // Initialize the PT history file used for offline fidelity analysis.
+    {
+        std::ofstream ptHistory(
+            "pt_state.jsonl",
+            std::ios::trunc
+        );
     }
-    firstJsonEntry = true;
+
+    // Initialize the constant-size live state file.
+    {
+        std::ofstream latestFile(
+            "network_state_latest.json",
+            std::ios::trunc
+        );
+        if (latestFile.is_open()) {
+            latestFile << "{}\n";
+        }
+    }
+
 
     // Timer
     sampleTimer = new cMessage("sampleTimer");
@@ -414,35 +428,33 @@ void DTConnector::handleMessage(cMessage *msg)
 void DTConnector::exportData()
 {
     double now = simTime().dbl();
-    if (!jsonFile.is_open()) return;
 
-    // =======================================================================
-    // PARTIE 1 : PRÉPARATION ET RECALAGE JSON
-    // =======================================================================
-    
-    // On recule de 2 caractères pour effacer le "\n]" écrit au tour précédent
-    // Cela permet de rester à l'intérieur du tableau principal [ ... ]
-    jsonFile.seekp(-2, std::ios::end);
+    // Build exactly one state snapshot in memory.
+    std::ostringstream snapshot;
 
-    if (!firstJsonEntry) { 
-        jsonFile << ",\n"; // Ajoute une virgule entre les blocs de timestamp
-    }
-    firstJsonEntry = false;
+    snapshot << "{\n";
+    snapshot << "  \"timestamp\": " << now << ",\n";
 
-    jsonFile << "  {\n";
-    jsonFile << "    \"timestamp\": " << now << ",\n";
+    const double generatedWallTime =
+        std::chrono::duration<double>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+
+    snapshot << "  \"generated_wall_time\": "
+             << std::fixed << std::setprecision(6)
+             << generatedWallTime << ",\n";
     
     // =======================================================================
     // PARTIE 2 : JSON - NODES (L'état physique brut de chaque UE)
     // =======================================================================
-    jsonFile << "    \"nodes\": [\n";
+    snapshot << "    \"nodes\": [\n";
     bool isFirstNode = true;
 
     for (size_t i = 0; i < hostNames.size(); ++i) {
         if (!mobilityModules[i]) continue;
 
         // Gestion propre de la virgule (AVANT l'élément, sauf le premier)
-        if (!isFirstNode) jsonFile << ",\n";
+        if (!isFirstNode) snapshot << ",\n";
         isFirstNode = false;
 
         inet::Coord pos = mobilityModules[i]->getCurrentPosition();
@@ -459,11 +471,11 @@ void DTConnector::exportData()
 
         std::string servingGnb = (rawName.find("ue") != std::string::npos) ? getServingGnbId(rawName) : "none";
 
-        jsonFile << "      { \"id\": \"" << cleanId << "\", ";
+        snapshot << "      { \"id\": \"" << cleanId << "\", ";
 
     if (hostNames[i].find("gnb") != std::string::npos) {
         // C'EST UN GNB : On met les métriques GLOBALES
-        jsonFile << "\"type\": \"gnb\", "
+        snapshot << "\"type\": \"gnb\", "
                 << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z ;
                 //  << "\"cell_loss_dl\": " << lastRlcCellPacketLossDl[i] << ", "
                 //  << "\"cell_loss_ul\": " << lastRlcCellPacketLossUl[i] << ", "
@@ -474,18 +486,20 @@ void DTConnector::exportData()
 
     } else {
         // C'EST UN UE : On met les métriques PHYSIQUES
-        jsonFile << "\"type\": \"ue\", "
+        snapshot << "\"type\": \"ue\", "
                  << "\"serving_gnb\": \"" << servingGnb << "\", "
-                 << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", "
+                 << "\"x\": " << pos.x
+                 << ", \"y\": " << pos.y
+                 << ", \"z\": " << pos.z << ", "
                  << "\"speed\": " << speed << ", "
                  << "\"sinr_dl\": " << lastSinrDl[i];
                 
     }
-    jsonFile << " }";
+    snapshot << " }";
 
 
     }
-    jsonFile << "\n    ],\n"; 
+    snapshot << "\n    ],\n"; 
 
     // =======================================================================
     // PARTIE 3 : DÉTECTION DES FLUX ACTIFS (Logique de collecte)
@@ -502,7 +516,10 @@ void DTConnector::exportData()
             if (!app || !app->hasPar("destAddresses")) continue;
 
             
-            if (now >= app->par("startTime").doubleValue()) {
+            double startTime = app->par("startTime").doubleValue();
+            double stopTime = app->par("stopTime").doubleValue();
+
+            if (now >= startTime && (stopTime < 0.0 || now < stopTime)) {
                 std::string dest = app->par("destAddresses").stdstringValue(); 
                 int dstIdx = findNodeIndexByName(dest);
                 
@@ -530,7 +547,10 @@ void DTConnector::exportData()
             cModule* app = host->getSubmodule("app", k);
             if (!app || !app->hasPar("destAddresses")) continue;
 
-            if (now >= app->par("startTime").doubleValue()) {
+            double startTime = app->par("startTime").doubleValue();
+            double stopTime = app->par("stopTime").doubleValue();
+
+            if (now >= startTime && (stopTime < 0.0 || now < stopTime)) {
                 std::string dest = app->par("destAddresses").stdstringValue();
                 FlowInfo f;
                 f.srcName = hostNames[i]; f.dstName = dest;
@@ -555,14 +575,14 @@ void DTConnector::exportData()
     // =======================================================================
     // PARTIE 4 : JSON - FLOWS (Performance des flux)
     // =======================================================================
-    jsonFile << "    \"flows\": [\n";
+    snapshot << "    \"flows\": [\n";
     bool isFirstFlow = true;
 
     for (size_t k = 0; k < activeFlows.size(); ++k) {
         int ueIdx = activeFlows[k].ueIndex;
         if (ueIdx < 0) continue;
 
-        if (!isFirstFlow) jsonFile << ",\n";
+        if (!isFirstFlow) snapshot << ",\n";
         isFirstFlow = false;
         
         double  thr = 0, delay = 0, bler = 0, loss = 0 , rlcDelay = 0 , rcvUpper = 0 , 
@@ -610,7 +630,7 @@ void DTConnector::exportData()
             (activeFlows[k].packetSize * 8.0) / activeFlows[k].interval;
 
 
-        jsonFile << "      { "
+        snapshot << "      { "
              << "\"type\": \"" << activeFlows[k].type << "\", "
              << "\"src\": \"" << activeFlows[k].srcName << "\", "
              << "\"dst\": \"" << activeFlows[k].dstName << "\", "
@@ -638,10 +658,51 @@ void DTConnector::exportData()
              << " }";
     }
 
-    // Fermeture propre du JSON pour validité immédiate
-    jsonFile << "\n    ]\n"; 
-    jsonFile << "  }\n]"; 
-    jsonFile.flush();   
+    // Close the single JSON snapshot.
+    snapshot << "\n  ]\n";
+    snapshot << "}\n";
+
+    // Append this physical-twin snapshot to the historical dataset.
+    // One complete JSON object is stored per line.
+    {
+        std::ofstream ptHistory(
+            "pt_state.jsonl",
+            std::ios::app
+        );
+
+        if (ptHistory.is_open()) {
+            std::string oneLine = snapshot.str();
+
+            for (char& c : oneLine) {
+                if (c == '\n' || c == '\r') {
+                    c = ' ';
+                }
+            }
+
+            ptHistory << oneLine << "\n";
+        }
+    }
+
+    // Write to a temporary file first, then atomically replace
+    // the live file. This prevents the Python sender from reading
+    // a partially written JSON document.
+    const char *tmpPath = "network_state_latest.json.tmp";
+    const char *livePath = "network_state_latest.json";
+
+    {
+        std::ofstream latestFile(
+            tmpPath,
+            std::ios::trunc
+        );
+
+        if (latestFile.is_open()) {
+            latestFile << snapshot.str();
+            latestFile.flush();
+            latestFile.close();
+
+            std::rename(tmpPath, livePath);
+        }
+    }
 
     // =======================================================================
     // PARTIE 5 : CSV - EXPORTATION DÉTAILLÉE

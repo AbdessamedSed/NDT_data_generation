@@ -37,3 +37,22 @@ bin/
 # Local framework dependencies
 omnet/inet-4.5.4
 omnet/simu5g-1.4.1
+
+# NDT runtime/generated state
+omnet/FiveG_network/simulations/network_state.json
+omnet/FiveG_network/simulations/network_state_latest.json
+omnet/FiveG_network/simulations/pt_state.jsonl
+omnet/FiveG_network/src/sent_packet_ids.txt
+omnet/FiveG_network/src/__pycache__/
+*.pyc
+
+# Temporary/manual backups
+*.bak_*
+*.before_*
+*.before_cleanup
+*.before_latest_state_*
+
+# Runtime experiment outputs
+scenario_*/
+comparison_live_report.json
+comparison_live_report*.json
