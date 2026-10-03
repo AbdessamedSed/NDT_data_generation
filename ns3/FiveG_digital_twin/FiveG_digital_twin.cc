@@ -980,13 +980,54 @@ cmd.Parse(argc, argv);
     mobility.Install(ueNodes); 
     mobility.Install(remoteHost);
 
-    // Positions initiales dynamiques
-    // for (uint32_t i = 0; i < nGnbs; ++i) {
-    //     gnbNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(Vector(726.0 + (i * 100), 277.0, 0.0));
-    // }
-    // for (uint32_t i = 0; i < nUes; ++i) {
-    //     ueNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(Vector(510.0 + i, 510.0, 0.0));
-    // }
+    // Initial positions for multi-cell validation.
+    // Keep the same reference geometry as the OMNeT++/Simu5G side.
+    for (uint32_t i = 0; i < nGnbs; ++i)
+    {
+        double x = 500.0;
+        double y = 500.0;
+        double z = 30.0;
+
+        if (nGnbs == 1)
+        {
+            x = 500.0;
+        }
+        else
+        {
+            // Spread gNBs uniformly over the horizontal axis.
+            // For nGnbs=2 -> x = 250 m and 750 m.
+            const double spacing = 500.0 / static_cast<double>(nGnbs - 1);
+            x = 250.0 + i * spacing;
+        }
+
+        gnbNodes.Get(i)
+            ->GetObject<MobilityModel>()
+            ->SetPosition(Vector(x, y, z));
+    }
+
+    // Validation UE positions:
+    // first half near the left cell, second half near the right cell.
+    for (uint32_t i = 0; i < nUes; ++i)
+    {
+        double x;
+        double y;
+
+        if (i < nUes / 2)
+        {
+            x = 150.0 + 25.0 * i;
+            y = 450.0 + 20.0 * i;
+        }
+        else
+        {
+            uint32_t j = i - nUes / 2;
+            x = 650.0 + 25.0 * j;
+            y = 450.0 + 20.0 * j;
+        }
+
+        ueNodes.Get(i)
+            ->GetObject<MobilityModel>()
+            ->SetPosition(Vector(x, y, 1.5));
+    }
 
     // --- 4. DITTO MAPPING ---
     for (uint32_t i = 0; i < nGnbs; ++i) thingIdToNode[discoveredGnbs[i]] = gnbNodes.Get(i);
