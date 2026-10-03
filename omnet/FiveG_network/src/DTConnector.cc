@@ -416,11 +416,29 @@ void DTConnector::processIncomingSignal(cComponent *source, simsignal_t signalID
 
 void DTConnector::handleMessage(cMessage *msg)
 {
-    if (msg == sampleTimer) {        
+    if (msg == sampleTimer) {
+        exportData();
 
-        exportData(); 
-        scheduleAt(simTime() + samplingInterval, sampleTimer);
-    } else delete msg;
+        double effectiveInterval = samplingInterval;
+
+        std::ifstream rateFile("/tmp/ndt_pt_sampling_hz");
+        if (rateFile.is_open()) {
+            double requestedHz = 10.0;
+            if (rateFile >> requestedHz) {
+                if (requestedHz < 10.0)
+                    requestedHz = 10.0;
+                if (requestedHz > 50.0)
+                    requestedHz = 50.0;
+
+                effectiveInterval = 1.0 / requestedHz;
+            }
+        }
+
+        scheduleAt(simTime() + effectiveInterval, sampleTimer);
+    }
+    else {
+        delete msg;
+    }
 }
 
 

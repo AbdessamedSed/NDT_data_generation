@@ -56,3 +56,23 @@ omnet/FiveG_network/src/__pycache__/
 scenario_*/
 comparison_live_report.json
 comparison_live_report*.json
+
+# Runtime experiment data
+scenarios/*/results/
+ndt_experiments/
+*.log
+*.pid
+
+# Live PT/DT state
+omnet/FiveG_network/simulations/network_state_latest.json
+omnet/FiveG_network/simulations/network_state_latest.json.tmp
+omnet/FiveG_network/simulations/pt_state.jsonl
+ns3/dt_state.json
+
+# Temporary action/control files
+/tmp/ndt_action_control.json
+/tmp/ndt_pt_sampling_hz
+
+# Backups / debug copies
+*.before_*
+*.bak
