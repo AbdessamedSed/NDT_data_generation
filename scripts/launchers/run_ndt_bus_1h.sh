@@ -240,6 +240,7 @@ tmux new-window \
      ./build/FiveG_digital_twin \
        --numUes=10 \
        --numGnbs=1 \
+       --rngRun=${NDT_SEED:-1} \
        --simTime=$NS3_DURATION \
      2>&1 | tee '$EXP_DIR/ns3.log'"
 
@@ -357,6 +358,7 @@ tmux new-window \
        -u Cmdenv \
        -c "${OMNET_CONFIG:-JournalBus1h}" \
        -f "${OMNET_INI:-journal_bus_1h.ini}" \
+       --seed-set=${NDT_SEED:-1} \
        --sim-time-limit=${SIM_DURATION}s \
        --**.dtConnector.samplingInterval="${PT_SAMPLING_INTERVAL:-0.1s}" \
      2>&1 | tee '$EXP_DIR/omnet.log'"

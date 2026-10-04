@@ -76,3 +76,13 @@ ns3/dt_state.json
 # Backups / debug copies
 *.before_*
 *.bak
+
+# Experiment outputs
+scenarios/*/results/
+scenarios/*/results_before_*/
+*.jsonl
+*.log
+
+# Temporary backups
+*.before_*
+*.bak

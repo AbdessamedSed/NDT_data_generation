@@ -121,7 +121,7 @@ void InstallControlTraffic(NodeContainer ueNodes, Ptr<Node> remoteHost, Ipv4Addr
         UdpClientHelper ulClient(remoteHostAddr, ulPort + i);
         ulClient.SetAttribute("MaxPackets", UintegerValue(4294967295U));
         ulClient.SetAttribute("Interval", TimeValue(MilliSeconds(100))); 
-        ulClient.SetAttribute("PacketSize", UintegerValue(1600));
+        ulClient.SetAttribute("PacketSize", UintegerValue(800));
         ApplicationContainer ulApp = ulClient.Install(ue);
         
         ulApp.Start(Seconds(1.0));
@@ -135,7 +135,7 @@ void InstallControlTraffic(NodeContainer ueNodes, Ptr<Node> remoteHost, Ipv4Addr
         UdpClientHelper dlClient(ueAddr, dlPort + i);
         dlClient.SetAttribute("MaxPackets", UintegerValue(4294967295U));
         dlClient.SetAttribute("Interval", TimeValue(MilliSeconds(100)));
-        dlClient.SetAttribute("PacketSize", UintegerValue(1600));
+        dlClient.SetAttribute("PacketSize", UintegerValue(800));
         ApplicationContainer dlApp = dlClient.Install(remoteHost);
         dlApp.Start(Seconds(1.0));
 
@@ -912,6 +912,9 @@ int main(int argc, char *argv[]) {
     uint32_t nUes = 10;
     uint32_t nGnbs = 1;
 
+    // Independent stochastic realization of the digital twin.
+    uint64_t rngRun = 1;
+
     CommandLine cmd(__FILE__);
     cmd.AddValue(
         "numUes",
@@ -923,12 +926,26 @@ int main(int argc, char *argv[]) {
         "Number of gNB nodes in the digital twin",
         nGnbs
     );
+    cmd.AddValue(
+        "rngRun",
+        "Independent ns-3 RNG run number",
+        rngRun
+    );
         cmd.AddValue(
         "simTime",
         "Simulation duration in seconds",
         simTime
     );
 cmd.Parse(argc, argv);
+
+    // Fixed base seed + independent run number.
+    // This gives reproducible but distinct stochastic realizations.
+    RngSeedManager::SetSeed(1);
+    RngSeedManager::SetRun(rngRun);
+
+    NS_LOG_UNCOND(
+        "[NS3] RNG seed=1 run=" << rngRun
+    );
 
     std::vector<std::string> discoveredUes;
     std::vector<std::string> discoveredGnbs;
