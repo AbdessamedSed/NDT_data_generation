@@ -31,7 +31,7 @@ PROJECTRELATIVE_PATH =
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = $O/src/DTConnector.o $O/src/FiveGApp.o
+OBJS = $O/src/DTConnector.o $O/src/FiveGApp.o $O/src/MobilityBurstController.o $O/src/BurstLinearMobility.o
 
 # Message files
 MSGFILES =

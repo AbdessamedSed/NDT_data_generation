@@ -40,6 +40,10 @@ network FiveGNetwork
 
 
     submodules:
+        mobilityBurstController: MobilityBurstController {
+            @display("p=80,80");
+        }
+
         channelControl: LteChannelControl {
             @display("p=50,25;is=s");
         }
