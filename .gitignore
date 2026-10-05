@@ -86,3 +86,20 @@ scenarios/*/results_before_*/
 # Temporary backups
 *.before_*
 *.bak
+
+# Generated experiment data
+scenarios/*/results/
+scenarios/*/failed_runs_archive/
+scenarios/*/results_before_*/
+*.jsonl
+*.log
+
+# Runtime states
+**/dt_state.json
+**/pt_state.jsonl
+**/network_state_latest.json
+**/network_state_latest.json.tmp
+
+# Backups
+*.before_*
+*.bak
