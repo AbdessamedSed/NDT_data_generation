@@ -1,0 +1,56 @@
+SC03 FINAL STATUS
+=================
+
+Topology:
+- 1 gNB
+- 20 UEs
+- 8 active DL flows
+
+Traffic families:
+- DET: 1 flow
+- Shifted exponential: 2 flows
+- Uniform: 2 flows
+- Truncated-normal packet size: 1 flow
+- Shifted Pareto: 2 flows
+
+Traffic regimes:
+- 0-100 s: LOW
+- 100-200 s: MEDIUM
+- 200-300 s: LOW
+- 300-400 s: MEDIUM
+- 400-500 s: LOW
+- 500-600 s: MEDIUM
+
+DT state export:
+- dt_state_latest.json: live state
+- dt_state_history.jsonl: complete history
+- latest snapshot interval: 0.02 s
+
+Run acceptance rule for nominal SC03:
+- valid = True
+- 300 actions
+- 300 decisions
+- 1200 fidelity samples
+- 300 communication samples
+- clean ns-3 log
+- runtime watchdog OK
+- DT/PT >= 0.80
+
+Accepted current runs:
+seed 101:  DT/PT = 0.991
+seed 303:  DT/PT = 0.990
+seed 505:  DT/PT = 0.988
+seed 606:  DT/PT = 0.847
+seed 707:  DT/PT = 0.845
+seed 808:  DT/PT = 0.871
+
+Runs retained for diagnostic but requiring controlled rerun:
+seed 202
+seed 404
+seed 909
+seed 1010
+
+Important observation:
+Repeated executions of the same seed showed substantial differences
+in real-time ns-3 progression. Therefore, compute/runtime conditions
+can materially affect DT lag independently of the scenario RNG seed.
