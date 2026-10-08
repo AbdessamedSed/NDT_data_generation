@@ -1,0 +1,29 @@
+{
+  "timestamp": 12,
+  "generated_wall_time": 1790930387.007313,
+    "nodes": [
+      { "id": "ue0", "type": "ue", "serving_gnb": "gnb1", "x": 284.841377, "y": 201.649914, "z": 3.921054, "speed": 11.488333, "sinr_dl": 33.958143 },
+      { "id": "ue1", "type": "ue", "serving_gnb": "gnb1", "x": 843.783999, "y": 597.045958, "z": 67.595462, "speed": 12.459404, "sinr_dl": 48.307096 },
+      { "id": "ue2", "type": "ue", "serving_gnb": "gnb1", "x": 906.289006, "y": 862.502445, "z": 3.521981, "speed": 11.416539, "sinr_dl": 37.933650 },
+      { "id": "ue3", "type": "ue", "serving_gnb": "gnb1", "x": 300.876831, "y": 647.387194, "z": 29.076146, "speed": 22.092412, "sinr_dl": 42.240436 },
+      { "id": "ue4", "type": "ue", "serving_gnb": "gnb1", "x": 293.373208, "y": 231.611481, "z": 6.188917, "speed": 8.643902, "sinr_dl": 32.333307 },
+      { "id": "ue5", "type": "ue", "serving_gnb": "gnb1", "x": 511.379553, "y": 413.152617, "z": 66.681694, "speed": 16.030755, "sinr_dl": 55.230514 },
+      { "id": "ue6", "type": "ue", "serving_gnb": "gnb1", "x": 200.761099, "y": 506.593045, "z": 77.911100, "speed": 8.129122, "sinr_dl": 46.287895 },
+      { "id": "ue7", "type": "ue", "serving_gnb": "gnb1", "x": 581.440380, "y": 627.377842, "z": 9.428810, "speed": 1.914722, "sinr_dl": 56.222695 },
+      { "id": "ue8", "type": "ue", "serving_gnb": "gnb1", "x": 500.581524, "y": 657.839593, "z": 6.336900, "speed": 11.952507, "sinr_dl": 40.915023 },
+      { "id": "ue9", "type": "ue", "serving_gnb": "gnb1", "x": 93.554901, "y": 165.378949, "z": 79.359704, "speed": 12.638839, "sinr_dl": 36.728659 },
+      { "id": "gnb0", "type": "gnb", "x": 500.000000, "y": 500.000000, "z": 30.000000 }
+    ],
+    "flows": [
+      { "type": "DL", "src": "server", "dst": "ue[0]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 61245.494357, "rlc_throughput_Bps": 60789.504717 },
+      { "type": "DL", "src": "server", "dst": "ue[1]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 55736.306794, "rlc_throughput_Bps": 55400.833681 },
+      { "type": "DL", "src": "server", "dst": "ue[2]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 13251.377066, "rlc_throughput_Bps": 13015.537549 },
+      { "type": "DL", "src": "server", "dst": "ue[3]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 50835.125448, "rlc_throughput_Bps": 50507.960323 },
+      { "type": "DL", "src": "server", "dst": "ue[4]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 18352.158909, "rlc_throughput_Bps": 18165.726791 },
+      { "type": "DL", "src": "server", "dst": "ue[5]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 140799.733311, "rlc_throughput_Bps": 140061.671806 },
+      { "type": "DL", "src": "server", "dst": "ue[6]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 52169.347446, "rlc_throughput_Bps": 51848.457048 },
+      { "type": "DL", "src": "server", "dst": "ue[7]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 140745.040840, "rlc_throughput_Bps": 139987.581264 },
+      { "type": "DL", "src": "server", "dst": "ue[8]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 97343.222464, "rlc_throughput_Bps": 96735.584155 },
+      { "type": "DL", "src": "server", "dst": "ue[9]", "app": "DL", "packet_size": 1000, "interval": 0.010000, "offered_rate_bps": 800000.000000, "mac_throughput_Bps": 61649.456976, "rlc_throughput_Bps": 61131.495405 }
+  ]
+}
