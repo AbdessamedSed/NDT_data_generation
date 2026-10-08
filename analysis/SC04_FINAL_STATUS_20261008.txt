@@ -1,0 +1,64 @@
+SC04 FINAL STATUS
+=================
+
+Scenario:
+- Joint mobility + traffic
+- 2 gNBs
+- 20 UEs
+- 5 active DL flows
+- Duration: 600 s
+- 10 seeds
+
+Traffic families:
+- Deterministic
+- Shifted exponential
+- Uniform
+- Clipped-Gaussian packet size
+- Shifted Pareto
+
+Traffic regimes:
+- 0-200 s: LOW
+- 200-300 s: MEDIUM
+- 300-400 s: LOW
+- 400-500 s: MEDIUM
+- 500-600 s: LOW
+
+Mobility:
+- Linear
+- Gauss-Markov
+- BurstLinear
+- Scheduled mobility bursts distributed across LOW and MEDIUM regimes
+
+Final DT/PT ratios:
+101  = 1.005
+202  = 0.980
+303  = 0.974
+404  = 1.005
+505  = 1.005
+606  = 0.955
+707  = 1.005
+808  = 1.005
+909  = 0.992
+1010 = 1.005
+
+Mean DT/PT = approximately 0.993
+Minimum     = 0.955
+Maximum     = 1.005
+
+All runs:
+- valid = True
+- actions = 300
+- decisions = 300
+- fidelity = 1200
+- communication = 300
+- ns3 log clean
+- runtime watchdog OK
+
+Observed behavior:
+- LOW regimes run approximately in real time and can recover previously
+  accumulated simulation lag.
+- MEDIUM traffic regimes introduce a moderate temporary slowdown.
+- No persistent compute-induced lag is observed across the 600-s runs.
+
+Conclusion:
+SC04 is accepted as the final Joint M+T dataset-generation scenario.

@@ -38,6 +38,7 @@
 #include <set> 
 #include <cctype> 
 #include <curl/curl.h>
+#include <cstdio>
 
 
 using namespace ns3;
@@ -184,14 +185,11 @@ public:
             mobility->SetPosition(Vector3D(x, y, z));
             table_radio_5g[nodeId].currentSpeed = speed;
 
-            std::cout
-                << "[NS3-MOBILITY] id=" << cleanId
-                << " nodeId=" << nodeId
-                << " x=" << x
-                << " y=" << y
-                << " z=" << z
-                << " speed=" << speed
-                << std::endl;
+            // Per-update mobility console logging disabled.
+            // At high synchronization frequencies this can generate
+            // thousands of flushed console lines per second and prevent
+            // the real-time DT from keeping pace with wall-clock time.
+            // Mobility updates are still applied normally in memory.
         }
     } else {
         std::cout
@@ -711,123 +709,180 @@ private:
 
 class SnapshotManager {
 private:
-    std::fstream m_file;
-    bool m_isFirst = true;
+    std::ofstream m_historyFile;
+    std::string m_latestFile;
 
 public:
     void Open(std::string filename) {
-        // On ouvre en lecture/écriture
-        m_file.open(filename, std::ios::out | std::ios::trunc);
-        m_file << "[\n";
-    
-        m_file.flush();
+        // Keep the output files in the same directory as the historical
+        // dt_state.json path supplied by the launcher.
+        const std::size_t pos = filename.find_last_of("/\\");
+        const std::string directory =
+            (pos == std::string::npos) ? "" : filename.substr(0, pos + 1);
+
+        m_latestFile = directory + "dt_state_latest.json";
+        const std::string historyFile =
+            directory + "dt_state_history.jsonl";
+
+        // The history is written as JSONL: one complete snapshot per line.
+        m_historyFile.open(
+            historyFile,
+            std::ios::out | std::ios::trunc
+        );
+
+        // Remove stale live-state files from a previous run.
+        std::remove(m_latestFile.c_str());
+        std::remove((m_latestFile + ".tmp").c_str());
     }
 
     void DoSnapshot() {
-        if (!m_file.is_open()) return;
+        if (!m_historyFile.is_open()) return;
 
-        double now = Simulator::Now().GetSeconds();
-
-        // Si c'est pas le premier, on recule pour effacer le "]" et mettre une virgule
-        if (!m_isFirst) {
-            m_file.seekp(-2, std::ios::end); 
-            m_file << ",\n";
-        }
-        m_isFirst = false;
-
-        m_file << "  {\n";
-        m_file << "    \"timestamp\": " << std::fixed << std::setprecision(2) << now << ",\n";
+        const double now = Simulator::Now().GetSeconds();
 
         const double snapshotWallTime =
             std::chrono::duration<double>(
                 std::chrono::system_clock::now().time_since_epoch()
             ).count();
 
-        m_file << "    \"wall_time\": "
-               << std::fixed << std::setprecision(6)
-               << snapshotWallTime << ",\n";
-        m_file << "    \"source_sim_time\": "
-               << std::fixed << std::setprecision(3)
-               << g_lastPtSourceSimTime << ",\n";
+        Json::Value snapshot(Json::objectValue);
 
-        m_file << "    \"source_sim_time_M\": "
-               << std::fixed << std::setprecision(3)
-               << g_lastPtSourceSimTimeM << ",\n";
+        snapshot["timestamp"] = now;
+        snapshot["wall_time"] = snapshotWallTime;
+        snapshot["source_sim_time"] = g_lastPtSourceSimTime;
+        snapshot["source_sim_time_M"] = g_lastPtSourceSimTimeM;
+        snapshot["source_sim_time_T"] = g_lastPtSourceSimTimeT;
 
-        m_file << "    \"source_sim_time_T\": "
-               << std::fixed << std::setprecision(3)
-               << g_lastPtSourceSimTimeT << ",\n";
+        // ------------------------------------------------------------
+        // Nodes
+        // ------------------------------------------------------------
+        Json::Value nodes(Json::arrayValue);
 
-        // --- SECTION NODES (UEs et gNBs) ---
-        m_file << "    \"nodes\": [\n";
-        bool firstNode = true;
         for (auto const& [dittoId, nodePtr] : thingIdToNode) {
-            uint32_t nid = nodePtr->GetId();
-            // On filtre pour ne prendre que les équipements physiques
-            if (dittoId.find("ue") != std::string::npos || dittoId.find("gnb") != std::string::npos) {
-                if (!firstNode) m_file << ",\n";
-                
-                Ptr<MobilityModel> mob = nodePtr->GetObject<MobilityModel>();
-                Vector pos = mob->GetPosition();
-                UeRadioTable& radio = table_radio_5g[nid];
-
-                m_file << "      { ";
-                m_file << "\"id\": \"" << dittoId << "\", ";
-                m_file << "\"x\": " << pos.x << ", \"y\": " << pos.y << ", \"z\": " << pos.z << ", ";
-                m_file << "\"speed\": " << radio.currentSpeed << ", ";
-                
-                if (dittoId.find("ue") != std::string::npos) {
-                    m_file << "\"serving_gnb\": \"" << radio.servingGnb << "\", ";
-                    m_file << "\"sinr_dl\": " << radio.dlSinr ;
-                    // m_file << "\"sinr_d2d\": -999";
-                } else {
-                    m_file << "\"type\": \"gNB\"";
-                }
-                m_file << " }";
-                firstNode = false;
+            if (
+                dittoId.find("ue") == std::string::npos &&
+                dittoId.find("gnb") == std::string::npos
+            ) {
+                continue;
             }
-        }
-        m_file << "\n    ],\n";
 
-        // --- SECTION FLOWS ---
-        m_file << "    \"flows\": [\n";
-        bool firstFlow = true;
+            const uint32_t nid = nodePtr->GetId();
+
+            Ptr<MobilityModel> mob =
+                nodePtr->GetObject<MobilityModel>();
+
+            const Vector pos = mob->GetPosition();
+            UeRadioTable& radio = table_radio_5g[nid];
+
+            Json::Value node(Json::objectValue);
+
+            node["id"] = dittoId;
+            node["x"] = pos.x;
+            node["y"] = pos.y;
+            node["z"] = pos.z;
+            node["speed"] = radio.currentSpeed;
+
+            if (dittoId.find("ue") != std::string::npos) {
+                node["serving_gnb"] = radio.servingGnb;
+                node["sinr_dl"] = radio.dlSinr;
+            } else {
+                node["type"] = "gNB";
+            }
+
+            nodes.append(node);
+        }
+
+        snapshot["nodes"] = nodes;
+
+        // ------------------------------------------------------------
+        // Flows
+        // ------------------------------------------------------------
+        Json::Value flows(Json::arrayValue);
+
         for (auto const& [fid, flow] : active_flows) {
-            if (!firstFlow) m_file << ",\n";
-            
-            bool isDl = (flow.srcName.find("server") != std::string::npos);
-            uint32_t ueId = isDl ? flow.dstNode->GetId() : flow.srcNode->GetId();
+            const bool isDl =
+                (flow.srcName.find("server") != std::string::npos);
+
+            const uint32_t ueId =
+                isDl
+                    ? flow.dstNode->GetId()
+                    : flow.srcNode->GetId();
+
             UeRadioTable& stats = table_radio_5g[ueId];
 
-            m_file << "      { ";
-            m_file << "\"type\": \"" << (isDl ? "DL" : "UL") << "\", ";
-            m_file << "\"src\": \"" << flow.srcName << "\", ";
-            m_file << "\"dst\": \"" << flow.dstName << "\", ";
-            // m_file << "\"app\": \"" << (isDl ? "DL_Traffic" : "UL_Traffic") << "\", ";
-            m_file << "\"packet_size\": " << flow.packetSize << ", ";
-            m_file << "\"interval\": " << std::setprecision(9) << flow.interval << ", ";
-            m_file << "\"offered_rate_bps\": " << std::setprecision(6) << flow.offeredRateBps << ", "; m_file << "\"rlc_throughput_Bps\": " << std::setprecision(6) << stats.rlcThroughputDl;
-            // m_file << "\"delay\": " << (isDl ? stats.macDelayDl : stats.macDelayUl) << ", ";
-            // m_file << "\"bler\": " << (isDl ? stats.blerDl : stats.blerUl) << ", ";
-            // m_file << "\"packet_loss\": " << (isDl ? stats.packetLossDl : stats.packetLossUl);
-            m_file << " }";
-            firstFlow = false;
+            Json::Value f(Json::objectValue);
+
+            f["type"] = isDl ? "DL" : "UL";
+            f["src"] = flow.srcName;
+            f["dst"] = flow.dstName;
+            f["packet_size"] = flow.packetSize;
+            f["interval"] = flow.interval;
+            f["offered_rate_bps"] = flow.offeredRateBps;
+            f["rlc_throughput_Bps"] = stats.rlcThroughputDl;
+
+            flows.append(f);
         }
-        m_file << "\n    ]\n";
-        
-        // --- FERMETURE DU SNAPSHOT ---
-        m_file << "  }\n]"; // 
-        m_file.flush();
 
-        Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, this);
+        snapshot["flows"] = flows;
 
+        // Compact JSON is used for both outputs.
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "";
+        const std::string payload =
+            Json::writeString(builder, snapshot);
+
+        // ------------------------------------------------------------
+        // 1. Live state
+        //
+        // Write to a temporary file and atomically rename it so the
+        // wall-clock collector never observes a partially written JSON.
+        // ------------------------------------------------------------
+        const std::string tmpFile = m_latestFile + ".tmp";
+
+        {
+            std::ofstream latest(
+                tmpFile,
+                std::ios::out | std::ios::trunc
+            );
+
+            if (latest.is_open()) {
+                latest << payload << "\n";
+                latest.close();
+
+                if (std::rename(
+                        tmpFile.c_str(),
+                        m_latestFile.c_str()
+                    ) != 0) {
+                    NS_LOG_ERROR(
+                        "Could not atomically replace "
+                        << m_latestFile
+                    );
+                }
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 2. Complete history
+        //
+        // One independent JSON object per line. The collector never
+        // reads this file during execution.
+        // ------------------------------------------------------------
+        m_historyFile << payload << "\n";
+        m_historyFile.flush();
+
+        Simulator::Schedule(
+            Seconds(g_snapshotInterval),
+            &SnapshotManager::DoSnapshot,
+            this
+        );
     }
 
     void Close() {
-        if (m_file.is_open()) m_file.close();
+        if (m_historyFile.is_open()) {
+            m_historyFile.close();
+        }
     }
 };
-
 
 SnapshotManager g_snapshotMgr;
 
@@ -1186,7 +1241,14 @@ cmd.Parse(argc, argv);
     //     Simulator::Schedule(Seconds(10.0), &CheckNeighborCache, ueNodes.Get(0));
     // }
 
-    nrHelper->EnableTraces();
+    // Disabled for real-time NDT execution.
+    // The complete 5G-LENA trace set creates substantial runtime overhead
+    // and is not required by the NDT pipeline. The metrics used by the
+    // dataset are already collected through the dedicated callbacks above.
+    // Keeping these global traces disabled helps the DT follow wall-clock
+    // time more closely in nominal scenarios such as SC03.
+    //
+    // nrHelper->EnableTraces();
     g_snapshotMgr.Open(g_outputFile);
     Simulator::Schedule(Seconds(g_snapshotInterval), &SnapshotManager::DoSnapshot, &g_snapshotMgr);
 

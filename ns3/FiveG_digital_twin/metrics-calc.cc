@@ -1,7 +1,16 @@
 
 #include "metrics-calc.h"
 
-double g_snapshotInterval = 0.01;
+// DT state observation interval.
+// 20 ms corresponds to 50 Hz, matching the maximum synchronization
+// frequency considered by the NDT controller. This avoids introducing
+// artificial observation staleness for high-frequency synchronization.
+// DT state observation interval.
+    // 20 ms = 50 Hz, matching the maximum synchronization frequency.
+    // DT state observation interval.
+    // 50 ms provides 20-Hz DT-state visibility while reducing
+    // snapshot I/O overhead during real-time 5G-LENA execution.
+    double g_snapshotInterval = 0.02;
 std::string g_outputFile = "dt_state.json";
 std::map<std::string, Ptr<Node>> thingIdToNode;
 std::map<uint32_t, UeRadioTable> table_radio_5g;
@@ -39,25 +48,53 @@ void TraceMacUlThroughput(uint16_t rnti, Ptr<const Packet> packet) {
 }
 
 
-void UpdateDlSinrTable(uint32_t nodeId, uint16_t cellId, uint16_t rnti, double sinr, uint16_t bwpId) {
-    // CONVERSION LINÉAIRE -> dB
-    double sinrDb = 10 * std::log10(sinr); 
+// void UpdateDlSinrTable(uint32_t nodeId, uint16_t cellId, uint16_t rnti, double sinr, uint16_t bwpId) {
+//     // CONVERSION LINÉAIRE -> dB
+//     double sinrDb = 10 * std::log10(sinr); 
     
-    table_radio_5g[nodeId].dlSinr = sinrDb;
+//     table_radio_5g[nodeId].dlSinr = sinrDb;
 
-    static std::map<uint32_t, Time> lastPrintTimes;
-    Time now = Simulator::Now();
+//     static std::map<uint32_t, Time> lastPrintTimes;
+//     Time now = Simulator::Now();
 
-    if (now - lastPrintTimes[nodeId] >= Seconds(0.5)) {
-        // AJOUTEZ CETTE LIGNE POUR LE DÉBOGAGE
-        // std::cout << "[PHY-DL-DEBUG] Node: " << nodeId 
-        //           << " | Raw SINR (linear): " << sinr << std::endl; 
+//     if (now - lastPrintTimes[nodeId] >= Seconds(0.5)) {
+//         // AJOUTEZ CETTE LIGNE POUR LE DÉBOGAGE
+//         // std::cout << "[PHY-DL-DEBUG] Node: " << nodeId 
+//         //           << " | Raw SINR (linear): " << sinr << std::endl; 
 
-        // std::cout << "\033[1;36m[PHY-DL]\033[0m Node: " << nodeId 
-        //           << " | RNTI: " << rnti 
-        //           << " | SINR: " << sinrDb << " dB" << std::endl;
+//         // std::cout << "\033[1;36m[PHY-DL]\033[0m Node: " << nodeId 
+//         //           << " | RNTI: " << rnti 
+//         //           << " | SINR: " << sinrDb << " dB" << std::endl;
         
-        lastPrintTimes[nodeId] = now; 
+//         lastPrintTimes[nodeId] = now; 
+//     }
+// }
+void UpdateDlSinrTable(uint32_t nodeId,
+                       uint16_t cellId,
+                       uint16_t rnti,
+                       double sinr,
+                       uint16_t bwpId)
+{
+    double sinrDb = -999.0;
+
+    if (sinr > 0.0) {
+        sinrDb = 10.0 * std::log10(sinr);
+    }
+
+    table_radio_5g[nodeId].dlSinr = sinrDb;
+    table_radio_5g[nodeId].servingGnb = "gnb:" + std::to_string(cellId);
+
+    static uint64_t count = 0;
+    count++;
+
+    if (count % 100 == 0) {
+        std::cout << "[DL-SINR-TRACE] nodeId=" << nodeId
+                  << " cellId=" << cellId
+                  << " rnti=" << rnti
+                  << " bwpId=" << bwpId
+                  << " sinr_linear=" << sinr
+                  << " sinr_db=" << sinrDb
+                  << std::endl;
     }
 }
 
@@ -102,38 +139,78 @@ void TracePhyStatsUl(uint16_t rnti, uint16_t bwpId, uint32_t nCbs, uint32_t nPas
     }
 }
 
-void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
-    double samplingInterval = 0.1; // 100ms
-    
-    // On récupère le calculateur PDCP (plus proche de l'application)
-    Ptr<NrBearerStatsCalculator> pdcpStats = nrHelper->GetPdcpStatsCalculator();
-    if (!pdcpStats) return;
+void ComputeThroughput(Ptr<NrHelper> nrHelper,
+                       NetDeviceContainer ueDevs)
+{
+    const double samplingInterval = g_snapshotInterval;
 
-    static std::map<uint64_t, uint64_t> lastTotalBytes;
+    Ptr<NrBearerStatsCalculator> rlcStats =
+        nrHelper->GetRlcStatsCalculator();
 
-    for (uint32_t i = 0; i < nUes; ++i) {
-        uint64_t imsi = i + 2 + nGnbs; 
-        uint32_t nodeId = i + 2 + nGnbs;
-        
-        // LA MÉTHODE CORRECTE est GetDlRxData (même pour le PDCP)
-        // Elle renvoie le total d'octets reçus depuis le début
-        uint64_t currentTotal = pdcpStats->GetDlRxData(imsi, 3);
-        
-        if (lastTotalBytes.count(imsi)) {
-            uint64_t deltaBytes = currentTotal - lastTotalBytes[imsi];
-            
-            // CONVERSION EN BITS/S (Unité standard OMNeT++)
-            // deltaBytes * 8 = bits
-            // bits / samplingInterval = bits/s
-            double thrBitsPerSec = (deltaBytes * 8.0) / samplingInterval;
-
-            if (table_radio_5g.count(nodeId)) {
-                table_radio_5g[nodeId].macThroughputDl = thrBitsPerSec;
-            }
-        }
-        lastTotalBytes[imsi] = currentTotal;
+    if (!rlcStats)
+    {
+        Simulator::Schedule(
+            Seconds(samplingInterval),
+            &ComputeThroughput,
+            nrHelper,
+            ueDevs);
+        return;
     }
-    Simulator::Schedule(Seconds(samplingInterval), &ComputeThroughput, nrHelper, nGnbs, nUes);
+
+    static std::map<uint64_t, uint64_t> lastDlRxBytes;
+
+    for (uint32_t i = 0; i < ueDevs.GetN(); ++i)
+    {
+        Ptr<NrUeNetDevice> ueDev =
+            ueDevs.Get(i)->GetObject<NrUeNetDevice>();
+
+        if (!ueDev)
+        {
+            continue;
+        }
+
+        const uint64_t imsi = ueDev->GetImsi();
+        const uint32_t nodeId = ueDev->GetNode()->GetId();
+
+        // Sum RLC DL bytes over the possible logical channels.
+        // This avoids assuming a hard-coded LCID for the active bearer.
+        uint64_t currentDlRxBytes = 0;
+
+        for (uint8_t lcid = 1; lcid <= 10; ++lcid)
+        {
+            currentDlRxBytes +=
+                rlcStats->GetDlRxData(imsi, lcid);
+        }
+
+        auto previous = lastDlRxBytes.find(imsi);
+
+        if (previous != lastDlRxBytes.end())
+        {
+            uint64_t deltaBytes = 0;
+
+            if (currentDlRxBytes >= previous->second)
+            {
+                deltaBytes =
+                    currentDlRxBytes - previous->second;
+            }
+
+            // Actual RLC downlink throughput in Bytes/s.
+            const double rlcThroughputBytesPerSec =
+                static_cast<double>(deltaBytes) /
+                samplingInterval;
+
+            table_radio_5g[nodeId].rlcThroughputDl =
+                rlcThroughputBytesPerSec;
+        }
+
+        lastDlRxBytes[imsi] = currentDlRxBytes;
+    }
+
+    Simulator::Schedule(
+        Seconds(samplingInterval),
+        &ComputeThroughput,
+        nrHelper,
+        ueDevs);
 }
 
 // void ComputeThroughput(Ptr<NrHelper> nrHelper, uint32_t nGnbs, uint32_t nUes) {
@@ -258,7 +335,7 @@ void ComputeDistance(Ptr<NrHelper> nrHelper, NodeContainer gnbNodes, uint32_t nG
             }
         }
         if (table_radio_5g.count(ueNodeId)) table_radio_5g[ueNodeId].distance = distance;
-        std::cout << "Node " << ueNodeId << " | Dist: " << distance << " m" << std::endl;
+        // std::cout << "Node " << ueNodeId << " | Dist: " << distance << " m" << std::endl;
     }
     Simulator::Schedule(Seconds(interval), &ComputeDistance, nrHelper, gnbNodes, nGnbs, nUes);
 }
