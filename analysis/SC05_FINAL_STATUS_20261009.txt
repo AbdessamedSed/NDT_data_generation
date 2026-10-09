@@ -1,0 +1,97 @@
+SC05 — FINAL STATUS
+===================
+
+Status
+------
+Final campaign complete and structurally validated.
+
+Profiles
+--------
+C0: 2 Mbps, 0 ms additional delay, 0 ms jitter
+C1: 2 Mbps, 20 ms additional delay, 5 ms jitter
+C2: 2 Mbps, 50 ms additional delay, 10 ms jitter
+
+Final seeds
+-----------
+101, 202, 303, 404, 505, 707, 808, 909, 1010, 1111
+
+Duration
+--------
+600 s per run
+
+Dataset size
+------------
+3 profiles x 10 seeds = 30 runs
+300 decision observations per run
+300 communication windows per run
+30/30 structurally complete
+
+Seed 606
+--------
+Seed 606 was excluded from the final SC05 seed set after a technical
+5G-LENA RLC-UM failure was observed during C1. It was replaced by seed
+1111 for all three profiles so that C0, C1 and C2 use the same seed set.
+
+Final aggregate communication results
+-------------------------------------
+
+C0:
+RTT mean              = 1.5186 ms
+RTT p95               = 2.8805 ms
+RTT jitter mean       = 0.5501 ms
+ICMP packet loss      = 0.0000 %
+Sync delay mean       = 5.7022 ms
+Sync-delay p95        = 6.1650 ms
+Sync delivery         = 99.9791 %
+AoI mean              = 23.3161 s
+AoI p95               = 47.0987 s
+
+C1:
+RTT mean              = 41.6564 ms
+RTT p95               = 43.5968 ms
+RTT jitter mean       = 1.8137 ms
+ICMP packet loss      = 0.0000 %
+Sync delay mean       = 25.5365 ms
+Sync-delay p95        = 27.4035 ms
+Sync delivery         = 99.6508 %
+AoI mean              = 22.6277 s
+AoI p95               = 45.1320 s
+
+C2:
+RTT mean              = 101.6201 ms
+RTT p95               = 105.0078 ms
+RTT jitter mean       = 3.3727 ms
+ICMP packet loss      = 0.0000 %
+Sync delay mean       = 55.5205 ms
+Sync-delay p95        = 58.9174 ms
+Sync delivery         = 97.9953 %
+AoI mean              = 25.1581 s
+AoI p95               = 51.5720 s
+
+Interpretation
+--------------
+The communication profiles show a stable and monotonic degradation:
+
+C0 < C1 < C2
+
+for RTT, measured jitter, synchronization delay, and synchronization
+message loss.
+
+All profiles use the same 2 Mbps link capacity. This avoids conflating
+controlled delay/jitter degradation with bandwidth-induced queue
+saturation.
+
+ICMP packet loss and synchronization-message delivery are distinct
+metrics. ICMP loss remained 0%, while effective synchronization delivery
+decreased from 99.98% in C0 to 98.00% in C2.
+
+AoI exhibits large inter-run variability and must not be interpreted as
+a direct communication-link metric. It is affected by DT/ns-3 real-time
+execution lag. DT/PT progression must therefore be analyzed separately.
+
+IMPORTANT
+---------
+The local experimental modification currently present in
+~/ns-3-dev/contrib/nr/model/nr-rlc-um.cc was NOT rebuilt before the final
+seed-1111 runs and is not part of the final SC05 executable/data.
+Do not treat that uncompiled diagnostic edit as part of the SC05 setup.

@@ -1,7 +1,7 @@
 #!/usr/bin/env core-python
 
 """
-C0_clean
+C1_moderate
 Nominal PT-to-DT communication profile.
 
 Topology:
@@ -89,8 +89,15 @@ def main():
 
     # C0 intentionally uses the nominal RF Pipe configuration.
     # Impairments will be introduced only in C1/C2/C3.
+
+
+
     # ------------------------------------------------------------------
     # Embed the RF Pipe configuration in the session definition.
+    #
+    # CORE StartSession clears the server-side session and rebuilds it from
+    # this wrapper object. Therefore the EMANE configuration must be part of
+    # the Node protobuf before start_session() is called.
     # ------------------------------------------------------------------
     for gateway in (pt, dt):
         emane_config = core.get_emane_model_config(
@@ -100,8 +107,8 @@ def main():
         )
 
         emane_config["datarate"].value = "2000000"
-        emane_config["delay"].value = "0.000"
-        emane_config["jitter"].value = "0.000"
+        emane_config["delay"].value = "0.020"
+        emane_config["jitter"].value = "0.005"
 
         gateway.emane_model_configs[
             (EmaneRfPipeModel.name, None)
@@ -118,7 +125,7 @@ def main():
 
 
     print("=" * 60)
-    print("CORE/EMANE profile: C0_clean")
+    print("CORE/EMANE profile: C1_moderate")
     print(f"CORE session ID: {session.id}")
     print("PT gateway   : 10.100.0.2")
     print("Ditto gateway: 10.100.0.3")
