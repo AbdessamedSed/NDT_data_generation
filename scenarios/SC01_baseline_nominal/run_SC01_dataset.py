@@ -134,7 +134,7 @@ def main():
     collector=spawn([
         sys.executable,"-u",str(COMMON/"collect_ndt_global.py"),
         "--pt",str(ROOT/"omnet/FiveG_network/simulations/network_state_latest.json"),
-        "--dt",str(HOME/"ns-3-dev/dt_state.json"),
+        "--dt",str(HOME/"ns-3-dev/dt_state_latest.json"),
         "--comm",str(comm_log),
         "--sync",str(sync_log),
         "--actions",str(actions),
@@ -171,7 +171,7 @@ def main():
     pt=ROOT/"omnet/FiveG_network/simulations/pt_state.jsonl"
     if pt.exists():
         shutil.copy2(pt,out/"raw/pt_state.jsonl")
-    dt=HOME/"ns-3-dev/dt_state.json"
+    dt=HOME/"ns-3-dev/dt_state_latest.json"
     if dt.exists():
         shutil.copy2(dt,out/"raw/dt_state.json")
 

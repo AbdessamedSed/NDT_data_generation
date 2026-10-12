@@ -1,0 +1,31 @@
+{
+  "scenario": "SC01",
+  "seed": 1111,
+  "duration_s": 600,
+  "decision_interval_s": 2.0,
+  "fidelity_interval_s": 0.5,
+  "behavior_policy": "balanced_shuffled_21_actions",
+  "frequencies_hz": [
+    1,
+    2,
+    5,
+    10,
+    20,
+    30,
+    50
+  ],
+  "masks": [
+    "M",
+    "T",
+    "MT"
+  ],
+  "counts": {
+    "actions": 55,
+    "decisions": 55,
+    "fidelity": 219,
+    "communication": 55
+  },
+  "ns3_log_clean": false,
+  "runtime_watchdog_ok": false,
+  "valid": false
+}
