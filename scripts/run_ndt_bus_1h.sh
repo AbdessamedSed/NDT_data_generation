@@ -29,8 +29,8 @@ DITTO_DOCKER="$HOME_DIR/ditto/deployment/docker"
 
 NS3_ROOT="$HOME_DIR/ns-3-dev"
 
-CORE_SCENARIO="$HOME_DIR/core/ndt_emane_test.py"
-CORE_PROFILE="$HOME_DIR/core/ndt_emane_profile_1h.py"
+CORE_SCENARIO="${CORE_SCENARIO:-$HOME_DIR/core/ndt_emane_test.py}"
+CORE_PROFILE="${CORE_PROFILE:-$HOME_DIR/core/ndt_emane_profile_1h.py}"
 
 TMUX_SESSION="ndt_bus_1h"
 
@@ -49,17 +49,24 @@ echo
 # PRE-FLIGHT
 # ---------------------------------------------------------------------------
 
-sudo -v
+# Never request a password from a detached experiment.
+# sudo credentials must be activated interactively before launching.
+if ! sudo -n true 2>/dev/null; then
+    echo "ERROR: sudo credentials are not available."
+    echo "Run 'sudo -v' in this tmux session before starting the experiment."
+    exit 2
+fi
 
-sudo systemctl start core-daemon
+sudo -n systemctl start core-daemon
 
-# Stop processes left from interactive validation.
-sudo pkill -f ditto_ns3_adapter.py 2>/dev/null || true
-sudo pkill -f omnet_core_sender.py 2>/dev/null || true
-sudo pkill -f omnetpp_ditto_ingress.py 2>/dev/null || true
-sudo pkill -f FiveG_digital_twin 2>/dev/null || true
-sudo pkill -f ndt_emane_test.py 2>/dev/null || true
-sudo pkill -f ndt_emane_1h.py 2>/dev/null || true
+# Stop processes left from previous validation/experiments.
+sudo -n pkill -f ditto_ns3_adapter.py 2>/dev/null || true
+sudo -n pkill -f omnet_core_sender.py 2>/dev/null || true
+sudo -n pkill -f omnet_core_sender_dynamic.py 2>/dev/null || true
+sudo -n pkill -f omnetpp_ditto_ingress.py 2>/dev/null || true
+sudo -n pkill -f FiveG_digital_twin 2>/dev/null || true
+sudo -n pkill -f ndt_emane_test.py 2>/dev/null || true
+sudo -n pkill -f ndt_emane_1h.py 2>/dev/null || true
 
 sleep 2
 
@@ -229,8 +236,9 @@ tmux new-window \
     -n ns3 \
     "cd '$NS3_ROOT' && \
      ./build/FiveG_digital_twin \
-       --numUes=10 \
-       --numGnbs=1 \
+       --numUes="${NDT_NUM_UES:-10}" \
+       --numGnbs="${NDT_NUM_GNBS:-1}" \
+       --rngRun=${NDT_SEED:-1} \
        --simTime=$NS3_DURATION \
      2>&1 | tee '$EXP_DIR/ns3.log'"
 
@@ -254,6 +262,31 @@ if [[ "$NS3_READY" -ne 1 ]]; then
 fi
 
 echo "ns-3 ready."
+
+echo "Waiting for ns-3 TAP interface thetap..."
+
+TAP_READY=0
+for _ in $(seq 1 60); do
+    if ip link show thetap >/dev/null 2>&1; then
+        sudo -n ip link set thetap up 2>/dev/null || true
+
+        if ip -br link show thetap 2>/dev/null | grep -q 'UP'; then
+            TAP_READY=1
+            break
+        fi
+    fi
+
+    sleep 0.5
+done
+
+if [[ "$TAP_READY" -ne 1 ]]; then
+    echo "ERROR: ns-3 TAP interface thetap did not become ready."
+    ip -br link | grep -Ei 'tap|tun|veth|core' || true
+    tail -30 "$EXP_DIR/ns3.log" 2>/dev/null || true
+    exit 1
+fi
+
+echo "ns-3 TAP interface thetap is ready."
 
 # ---------------------------------------------------------------------------
 # DITTO -> NS-3 adapter
@@ -305,7 +338,7 @@ core.node_command(
 cd ${OMNET_ROOT}/src &&
 export NDT_SYNC_HZ='${SYNC_HZ}' &&
 export NDT_SYNC_MASK='${SYNC_MASK}' &&
-python3 -u omnet_core_sender.py \
+python3 -u omnet_core_sender_dynamic.py \
 > '${EXP_DIR}/omnet_sender.log' 2>&1
 """,
     wait=False,
@@ -326,7 +359,7 @@ core.connect()
 result = core.node_command(
     ${CORE_SESSION_ID},
     2,
-    "pgrep -af omnet_core_sender.py || true",
+    "pgrep -af omnet_core_sender_dynamic.py || true",
     wait=True,
     shell=True,
 )
@@ -346,10 +379,11 @@ tmux new-window \
      cd '$OMNET_SIM' && \
      ../FiveG_network \
        -u Cmdenv \
-       -c JournalBus1h \
-       -f journal_bus_1h.ini \
+       -c "${OMNET_CONFIG:-JournalBus1h}" \
+       -f "${OMNET_INI:-journal_bus_1h.ini}" \
+       --seed-set=${NDT_SEED:-1} \
        --sim-time-limit=${SIM_DURATION}s \
-       --**.dtConnector.samplingInterval=0.1s \
+       --**.dtConnector.samplingInterval="${PT_SAMPLING_INTERVAL:-0.1s}" \
      2>&1 | tee '$EXP_DIR/omnet.log'"
 
 echo "Waiting for first PT snapshot..."
