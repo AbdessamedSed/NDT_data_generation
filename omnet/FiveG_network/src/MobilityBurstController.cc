@@ -89,6 +89,9 @@ class MobilityBurstController : public cSimpleModule
   protected:
     virtual void initialize() override
     {
+        if (!par("enabled").boolValue())
+            return;
+
         /*
          * UE16:
          * normal 10 m/s
@@ -173,8 +176,11 @@ class MobilityBurstController : public cSimpleModule
 
     virtual void finish() override
     {
-        cancelAndDelete(timer);
-        timer = nullptr;
+        if (timer != nullptr)
+        {
+            cancelAndDelete(timer);
+            timer = nullptr;
+        }
     }
 
   public:
