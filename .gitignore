@@ -103,3 +103,23 @@ scenarios/*/results_before_*/
 # Backups
 *.before_*
 *.bak
+
+# Generated runtime data
+**/results/
+**/archive/
+*.jsonl
+network_state_latest.json
+pt_state.jsonl
+dtConnector_Links.csv
+
+# Temporary / backup files
+*.before_*
+*.backup_*
+*.bak*
+*.bad_first_attempt
+*.base
+__pycache__/
+*.pyc
+
+# Built binaries
+omnet/FiveG_network/FiveG_network
